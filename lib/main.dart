@@ -2,8 +2,14 @@ import 'package:flutter/material.dart';
 import 'screens/timer_screen.dart';
 import 'screens/placeholder_screen.dart';
 import 'utils/constants.dart';
+import 'services/storage_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // データ保存サービスを初期化
+  await StorageService.instance.init();
+  
   runApp(const HyperConcentrationApp());
 }
 

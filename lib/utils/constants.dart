@@ -8,6 +8,7 @@ class AppConstants {
   static const Color primaryColor = Color(0xFF1E4D7B);
   static const Color accentColor = Color(0xFF2C7DA0);
   static const Color darkTeal = Color(0xFF0A2540);
+  static const Color unselectedLabelColor = Color(0xFF4A5568);
   
   // グラデーション
   static const LinearGradient oceanGradient = LinearGradient(
