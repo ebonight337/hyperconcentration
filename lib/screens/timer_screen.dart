@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'focus_screen.dart';
 import '../utils/constants.dart';
+import '../services/storage_service.dart';
 
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
@@ -10,12 +11,51 @@ class TimerScreen extends StatefulWidget {
 }
 
 class _TimerScreenState extends State<TimerScreen> {
+  final StorageService _storage = StorageService.instance;
+  
   // デフォルト値
   double _workMinutes = AppConstants.defaultWorkMinutes.toDouble();
   double _breakMinutes = AppConstants.defaultBreakMinutes.toDouble();
   int _sets = AppConstants.defaultSets;
+  
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastSettings();
+  }
+
+  /// 最後の設定を読み込む
+  Future<void> _loadLastSettings() async {
+    try {
+      final settings = await _storage.getLastTimerSettings();
+      setState(() {
+        _workMinutes = settings['workMinutes']!.toDouble();
+        _breakMinutes = settings['breakMinutes']!.toDouble();
+        _sets = settings['sets']!;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 設定を保存
+  Future<void> _saveSettings() async {
+    await _storage.saveLastTimerSettings(
+      workMinutes: _workMinutes.toInt(),
+      breakMinutes: _breakMinutes.toInt(),
+      sets: _sets,
+    );
+  }
 
   void _startTimer() {
+    // 開始時に設定を保存
+    _saveSettings();
+    
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FocusScreen(
@@ -29,6 +69,14 @@ class _TimerScreenState extends State<TimerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppConstants.accentColor,
+        ),
+      );
+    }
+    
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -56,6 +104,7 @@ class _TimerScreenState extends State<TimerScreen> {
                 setState(() {
                   _workMinutes = value;
                 });
+                _saveSettings(); // 設定を保存
               },
             ),
             
@@ -71,6 +120,7 @@ class _TimerScreenState extends State<TimerScreen> {
                 setState(() {
                   _breakMinutes = value;
                 });
+                _saveSettings(); // 設定を保存
               },
             ),
             
@@ -193,6 +243,7 @@ class _TimerScreenState extends State<TimerScreen> {
                         setState(() {
                           _sets--;
                         });
+                        _saveSettings(); // 設定を保存
                       }
                     : null,
                 icon: const Icon(Icons.remove_circle_outline),
@@ -234,6 +285,7 @@ class _TimerScreenState extends State<TimerScreen> {
                         setState(() {
                           _sets++;
                         });
+                        _saveSettings(); // 設定を保存
                       }
                     : null,
                 icon: const Icon(Icons.add_circle_outline),

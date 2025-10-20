@@ -17,6 +17,8 @@ class StorageService {
   /// 初期化
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+    // データベースも初期化
+    await _dbHelper.database;
   }
 
   SharedPreferences get _preferences {
@@ -81,21 +83,24 @@ class StorageService {
   Future<void> _updateStatsAfterSession(FocusSession session) async {
     final stats = await getStats();
     
-    // 累計時間を更新
+    // 累計時間を更新（途中停止でも集中した時間は記録）
     final newTotalMinutes = stats.totalFocusMinutes + session.totalFocusMinutes;
     
     // 連続達成日数を更新
     int newCurrentStreak = stats.currentStreak;
     int newMaxStreak = stats.maxStreak;
     int newInterruptions = stats.totalInterruptions;
+    DateTime? newLastSessionDate = stats.lastSessionDate;
 
     if (session.wasInterrupted) {
-      // 途中停止の場合、連続達成日数をリセット
-      newCurrentStreak = 0;
+      // 途中停止の場合
+      // - 途中停止回数だけ増やす
+      // - 連続達成日数は変更しない（リセットしない）
+      // - lastSessionDateは更新しない（その日に後で達成すれば連続になる）
       newInterruptions++;
     } else {
-      // 正常完了の場合、連続達成日数を更新
-      final today = _normalizeDate(DateTime.now());
+      // 正常完了の場合のみ、連続達成日数を更新
+      final today = _normalizeDate(session.date);
       final lastDate = stats.lastSessionDate != null
           ? _normalizeDate(stats.lastSessionDate!)
           : null;
@@ -108,12 +113,13 @@ class StorageService {
         
         if (daysDiff == 0) {
           // 同じ日の追加セッション（連続日数は変わらない）
+          // 途中停止があった後でも、同じ日に達成すれば連続継続
           newCurrentStreak = stats.currentStreak;
         } else if (daysDiff == 1) {
           // 連続している
           newCurrentStreak = stats.currentStreak + 1;
         } else {
-          // 連続が途切れた
+          // 連続が途切れた（1日以上空いた）
           newCurrentStreak = 1;
         }
       }
@@ -122,6 +128,9 @@ class StorageService {
       if (newCurrentStreak > stats.maxStreak) {
         newMaxStreak = newCurrentStreak;
       }
+      
+      // 正常完了の場合のみlastSessionDateを更新
+      newLastSessionDate = session.date;
     }
 
     // 更新された統計を保存
@@ -130,7 +139,7 @@ class StorageService {
       currentStreak: newCurrentStreak,
       maxStreak: newMaxStreak,
       totalInterruptions: newInterruptions,
-      lastSessionDate: session.date,
+      lastSessionDate: newLastSessionDate,
     );
 
     await saveStats(updatedStats);
@@ -205,6 +214,26 @@ class StorageService {
   /// 通知音設定を保存
   Future<void> setNotificationSound(int value) async {
     await _preferences.setInt('notification_sound', value);
+  }
+
+  /// 最後に設定したタイマー設定を取得
+  Future<Map<String, int>> getLastTimerSettings() async {
+    return {
+      'workMinutes': _preferences.getInt('last_work_minutes') ?? 25,
+      'breakMinutes': _preferences.getInt('last_break_minutes') ?? 5,
+      'sets': _preferences.getInt('last_sets') ?? 3,
+    };
+  }
+
+  /// 最後に設定したタイマー設定を保存
+  Future<void> saveLastTimerSettings({
+    required int workMinutes,
+    required int breakMinutes,
+    required int sets,
+  }) async {
+    await _preferences.setInt('last_work_minutes', workMinutes);
+    await _preferences.setInt('last_break_minutes', breakMinutes);
+    await _preferences.setInt('last_sets', sets);
   }
 
   // ==================== データリセット ====================

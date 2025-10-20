@@ -39,6 +39,12 @@ dependencies:
   sqflite: ^2.3.0
   shared_preferences: ^2.2.2
   path: ^1.8.3
+  
+  # グラフ表示用
+  fl_chart: ^0.69.0
+  
+  # 通知機能用
+  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:

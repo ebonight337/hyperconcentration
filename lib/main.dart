@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'screens/timer_screen.dart';
+import 'screens/stats_screen/stats_screen.dart';
 import 'screens/placeholder_screen.dart';
 import 'utils/constants.dart';
 import 'services/storage_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // データ保存サービスを初期化
   await StorageService.instance.init();
+  
+  // 通知サービスを初期化
+  await NotificationService.instance.init();
   
   runApp(const HyperConcentrationApp());
 }
@@ -104,7 +109,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
               controller: _tabController,
               children: const [
                 TimerScreen(),
-                PlaceholderScreen(title: '統計'),
+                StatsScreen(),
                 PlaceholderScreen(title: '設定'),
               ],
             ),
