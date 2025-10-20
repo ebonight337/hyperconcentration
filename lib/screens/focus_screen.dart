@@ -5,7 +5,9 @@ import '../utils/motivational_messages.dart';
 import '../widgets/ripple_effect.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
+import '../services/achievement_service.dart';
 import '../models/focus_session.dart';
+import '../models/achievement.dart';
 
 class FocusScreen extends StatefulWidget {
   final int workMinutes;
@@ -42,6 +44,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
   int _completedWorkSets = 0; // 完了した作業セット数
   final StorageService _storage = StorageService.instance;
   final NotificationService _notificationService = NotificationService.instance;
+  final AchievementService _achievementService = AchievementService();
   
   // 波紋エフェクト用
   final List<RippleController> _ripples = [];
@@ -277,13 +280,25 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
       wasInterrupted: wasInterrupted,
     );
 
+    List<Achievement> newAchievements = [];
+    
     try {
       // データを保存
       await _storage.saveSession(session);
       
+      // 実績判定（途中停止でない場合のみ）
+      if (!wasInterrupted) {
+        newAchievements = await _achievementService.checkAchievements(session);
+      }
+      
       // デバッグ：バックグラウンド時間を記録
       if (_totalBackgroundSeconds > 0) {
         debugPrint('総バックグラウンド時間: ${_totalBackgroundSeconds}秒');
+      }
+      
+      // 新しい実績があればログ出力
+      if (newAchievements.isNotEmpty) {
+        debugPrint('🏆 新しい実績解除: ${newAchievements.map((a) => a.title).join(", ")}');
       }
     } catch (e) {
       // エラーがあっても続行（ダイアログは表示する）
@@ -292,11 +307,17 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
 
     // 完了ダイアログを表示
     if (mounted) {
-      _showCompletionDialog(wasInterrupted: wasInterrupted);
+      _showCompletionDialog(
+        wasInterrupted: wasInterrupted,
+        newAchievements: newAchievements,
+      );
     }
   }
 
-  void _showCompletionDialog({required bool wasInterrupted}) {
+  void _showCompletionDialog({
+    required bool wasInterrupted,
+    List<Achievement> newAchievements = const [],
+  }) {
     final message = wasInterrupted
         ? '途中で停止しました。\n完了したセット: $_completedWorkSets / ${widget.totalSets}'
         : '全セット完了です。\n${MotivationalMessages.getRandomCompletionMessage()}';
@@ -311,10 +332,51 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
           style: const TextStyle(color: Colors.white),
           textAlign: TextAlign.center,
         ),
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white70),
-          textAlign: TextAlign.center,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              style: const TextStyle(color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+            // 新しい実績があれば表示
+            if (newAchievements.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 12),
+              Text(
+                '🏆 新しい実績を解除！',
+                style: TextStyle(
+                  color: AppConstants.accentColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ...newAchievements.map((achievement) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      achievement.icon,
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      achievement.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+            ]
+          ],
         ),
         actions: [
           TextButton(
