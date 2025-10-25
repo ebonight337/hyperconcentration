@@ -1,5 +1,24 @@
 import 'package:flutter/material.dart';
 
+/// 通知音のオプション
+class NotificationSoundOption {
+  final String id;
+  final String displayName;
+  final String description;
+  final String? androidResourceName; // Android rawリソース名（拡張子なし）
+  final String? iosFileName; // iOSファイル名（拡張子あり）
+  final bool isVibrationOnly;
+
+  const NotificationSoundOption({
+    required this.id,
+    required this.displayName,
+    required this.description,
+    this.androidResourceName,
+    this.iosFileName,
+    this.isVibrationOnly = false,
+  });
+}
+
 /// アプリ全体で使用する定数を管理
 class AppConstants {
   // カラー定数
@@ -60,8 +79,8 @@ class AppConstants {
   // タイマー設定範囲
   static const int minWorkMinutes = 5;
   static const int maxWorkMinutes = 120;
-  static const int minBreakMinutes = 0;
-  static const int maxBreakMinutes = 60;
+  static const double minBreakMinutes = 0.5; // 30秒
+  static const double maxBreakMinutes = 5.0; // 5分
   static const int minSets = 1;
   static const int maxSets = 100;
   
@@ -91,4 +110,39 @@ class AppConstants {
       ),
     ],
   );
+  
+  // 通知音の選択肢リスト（拡張性を考慮）
+  static const List<NotificationSoundOption> notificationSounds = [
+    NotificationSoundOption(
+      id: 'clock',
+      displayName: '柱時計の鐘',
+      description: '落ち着いた鐘の音',
+      androidResourceName: 'notification_clock',
+      iosFileName: 'notification_clock.mp3',
+    ),
+    NotificationSoundOption(
+      id: 'cuckoo',
+      displayName: '鳩時計',
+      description: 'かわいい鳩の声',
+      androidResourceName: 'notification_cuckoo',
+      iosFileName: 'notification_cuckoo.mp3',
+    ),
+    NotificationSoundOption(
+      id: 'vibration_only',
+      displayName: 'バイブレーションのみ',
+      description: '音なし・振動のみ',
+      isVibrationOnly: true,
+    ),
+    // 今後、ここに新しい音声を追加できます！
+    // NotificationSoundOption(
+    //   id: 'male_voice',
+    //   displayName: '男性音声',
+    //   description: '落ち着いた男性の声',
+    //   androidResourceName: 'notification_male',
+    //   iosFileName: 'notification_male.mp3',
+    // ),
+  ];
+  
+  // デフォルトの通知音ID
+  static const String defaultNotificationSoundId = 'clock';
 }

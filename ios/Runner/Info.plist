@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- 通知機能の説明 -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>集中時間の終了をお知らせするために通知を使用します。</string>
 </dict>
 </plist>

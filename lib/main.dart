@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/timer_screen.dart';
 import 'screens/stats_screen/stats_screen.dart';
-import 'screens/placeholder_screen.dart';
+import 'screens/settings_screen/settings_screen.dart';
 import 'utils/constants.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
@@ -110,7 +110,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
               children: const [
                 TimerScreen(),
                 StatsScreen(),
-                PlaceholderScreen(title: '設定'),
+                SettingsScreen(),
               ],
             ),
           ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'focus_screen.dart';
 import '../utils/constants.dart';
 import '../services/storage_service.dart';
+import '../models/my_set.dart';
+import '../screens/settings_screen/widgets/my_set_dialog.dart';
 
 class TimerScreen extends StatefulWidget {
   const TimerScreen({super.key});
@@ -18,22 +20,39 @@ class _TimerScreenState extends State<TimerScreen> {
   double _breakMinutes = AppConstants.defaultBreakMinutes.toDouble();
   int _sets = AppConstants.defaultSets;
   
+  // マイセット関連
+  List<MySet> _mySets = [];
+  MySet? _selectedMySet;
+  bool _isCustom = false; // 手動で変更された場合true
+  
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadLastSettings();
+    _loadData();
   }
 
-  /// 最後の設定を読み込む
-  Future<void> _loadLastSettings() async {
+  /// データを読み込む
+  Future<void> _loadData() async {
     try {
+      // マイセット一覧を取得
+      final mySets = await _storage.getMySets();
+      
+      // 最後の設定を読み込む
       final settings = await _storage.getLastTimerSettings();
+      
       setState(() {
+        _mySets = mySets;
         _workMinutes = settings['workMinutes']!.toDouble();
-        _breakMinutes = settings['breakMinutes']!.toDouble();
+        // 休憩時間が範囲外の場合は補正
+        _breakMinutes = _validateBreakMinutes(settings['breakMinutes']!.toDouble());
         _sets = settings['sets']!;
+        
+        // 最後の設定と一致するマイセットがあれば選択
+        _selectedMySet = _findMatchingMySet();
+        _isCustom = _selectedMySet == null;
+        
         _isLoading = false;
       });
     } catch (e) {
@@ -41,6 +60,28 @@ class _TimerScreenState extends State<TimerScreen> {
         _isLoading = false;
       });
     }
+  }
+  
+  /// 休憩時間の値を検証・補正
+  double _validateBreakMinutes(double value) {
+    if (value < AppConstants.minBreakMinutes) {
+      return AppConstants.minBreakMinutes;
+    } else if (value > AppConstants.maxBreakMinutes) {
+      return AppConstants.maxBreakMinutes;
+    }
+    return value;
+  }
+
+  /// 現在の設定と一致するマイセットを探す
+  MySet? _findMatchingMySet() {
+    for (final mySet in _mySets) {
+      if (mySet.workMinutes == _workMinutes.toInt() &&
+          mySet.breakMinutes == _breakMinutes.toInt() &&
+          mySet.sets == _sets) {
+        return mySet;
+      }
+    }
+    return null;
   }
 
   /// 設定を保存
@@ -50,6 +91,156 @@ class _TimerScreenState extends State<TimerScreen> {
       breakMinutes: _breakMinutes.toInt(),
       sets: _sets,
     );
+  }
+
+  /// マイセットを選択
+  void _selectMySet(MySet? mySet) {
+    if (mySet == null) return;
+    
+    setState(() {
+      _selectedMySet = mySet;
+      _workMinutes = mySet.workMinutes.toDouble();
+      // 休憩時間が範囲外の場合は補正
+      _breakMinutes = _validateBreakMinutes(mySet.breakMinutes.toDouble());
+      _sets = mySet.sets;
+      _isCustom = false;
+    });
+    
+    _saveSettings();
+  }
+
+  /// 設定が手動で変更された
+  void _onManualChange() {
+    setState(() {
+      _isCustom = true;
+      _selectedMySet = null;
+    });
+    _saveSettings();
+  }
+
+  /// マイセットを編集
+  Future<void> _editMySet() async {
+    if (_selectedMySet == null) return;
+    
+    final result = await showDialog<MySet>(
+      context: context,
+      builder: (context) => MySetDialog(editingSet: _selectedMySet),
+    );
+
+    if (result != null) {
+      try {
+        // 既存のセットを削除して新しいセットを追加
+        await _storage.deleteMySet(_selectedMySet!.id);
+        await _storage.addMySet(result);
+        
+        // マイセット一覧を再読み込み
+        final mySets = await _storage.getMySets();
+        
+        setState(() {
+          _mySets = mySets;
+          _selectedMySet = result;
+          _workMinutes = result.workMinutes.toDouble();
+          // 休憩時間が範囲外の場合は補正
+          _breakMinutes = _validateBreakMinutes(result.breakMinutes.toDouble());
+          _sets = result.sets;
+          _isCustom = false;
+        });
+        
+        _saveSettings();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '「${result.name}」を更新しました',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: AppConstants.surfaceColor,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '更新に失敗しました: $e',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 現在の設定を新しいマイセットとして保存
+  Future<void> _saveAsNewMySet() async {
+    if (_mySets.length >= 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'マイセットは最大5つまでです',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final result = await showDialog<MySet>(
+      context: context,
+      builder: (context) => MySetDialog(
+        editingSet: MySet(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: '',
+          workMinutes: _workMinutes.toInt(),
+          breakMinutes: _breakMinutes.toInt(),
+          sets: _sets,
+        ),
+      ),
+    );
+
+    if (result != null) {
+      try {
+        await _storage.addMySet(result);
+        
+        // マイセット一覧を再読み込み
+        final mySets = await _storage.getMySets();
+        
+        setState(() {
+          _mySets = mySets;
+          _selectedMySet = result;
+          _isCustom = false;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '「${result.name}」を保存しました',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: AppConstants.surfaceColor,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '保存に失敗しました: $e',
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _startTimer() {
@@ -92,7 +283,12 @@ class _TimerScreenState extends State<TimerScreen> {
               textAlign: TextAlign.center,
             ),
             
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
+            
+            // マイセット選択
+            _buildMySetSelector(),
+            
+            const SizedBox(height: 20),
             
             // 作業時間設定
             _buildTimeSection(
@@ -104,42 +300,172 @@ class _TimerScreenState extends State<TimerScreen> {
                 setState(() {
                   _workMinutes = value;
                 });
-                _saveSettings(); // 設定を保存
+                _onManualChange();
               },
             ),
             
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
             
             // 休憩時間設定
             _buildTimeSection(
               title: '休憩時間',
               value: _breakMinutes,
-              min: AppConstants.minBreakMinutes.toDouble(),
-              max: AppConstants.maxBreakMinutes.toDouble(),
+              min: AppConstants.minBreakMinutes,
+              max: AppConstants.maxBreakMinutes,
               onChanged: (value) {
                 setState(() {
                   _breakMinutes = value;
                 });
-                _saveSettings(); // 設定を保存
+                _onManualChange();
               },
             ),
             
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
             
             // セット数設定
             _buildSetSection(),
             
-            const SizedBox(height: 50),
+            const SizedBox(height: 20),
+            
+            // カスタム設定時の保存ボタン
+            if (_isCustom && _mySets.length < 5)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: OutlinedButton.icon(
+                  onPressed: _saveAsNewMySet,
+                  icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                  label: const Text('現在の設定を保存'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppConstants.accentColor,
+                    side: const BorderSide(
+                      color: AppConstants.accentColor,
+                      width: 1.5,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
             
             // 開始ボタン
             _buildStartButton(),
             
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
             
             // ステータス表示
             _buildStatusDisplay(),
           ],
         ),
+      ),
+    );
+  }
+
+  // マイセット選択セクション
+  Widget _buildMySetSelector() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppConstants.cardDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.bookmark_outlined,
+                color: AppConstants.accentColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'マイセット',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.7),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          Row(
+            children: [
+              // ドロップダウン
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: AppConstants.primaryColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _isCustom
+                          ? Colors.white.withOpacity(0.3)
+                          : AppConstants.accentColor.withOpacity(0.5),
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _isCustom ? 'custom' : _selectedMySet?.id,
+                      isExpanded: true,
+                      dropdownColor: AppConstants.surfaceColor,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                      ),
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      items: [
+                        ..._mySets.map((mySet) {
+                          return DropdownMenuItem<String>(
+                            value: mySet.id,
+                            child: Text(
+                              mySet.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }),
+                        DropdownMenuItem<String>(
+                          value: 'custom',
+                          child: Text(
+                            'カスタム',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == 'custom') {
+                          setState(() {
+                            _isCustom = true;
+                            _selectedMySet = null;
+                          });
+                        } else {
+                          final mySet = _mySets.firstWhere((s) => s.id == value);
+                          _selectMySet(mySet);
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              
+              // 編集ボタン（マイセット選択時のみ）
+              if (!_isCustom && _selectedMySet != null) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _editMySet,
+                  icon: const Icon(Icons.edit_outlined),
+                  color: AppConstants.accentColor,
+                  tooltip: '編集',
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -152,6 +478,29 @@ class _TimerScreenState extends State<TimerScreen> {
     required double max,
     required ValueChanged<double> onChanged,
   }) {
+    // 休憩時間かどうかを判定
+    final isBreakTime = title == '休憩時間';
+    
+    // 分割数を計算（休憩時間は30秒刻み、それ以外は5分刻み）
+    final divisions = isBreakTime 
+        ? ((max - min) / 0.5).toInt() // 30秒刻み
+        : ((max - min) / 5).toInt();    // 5分刻み
+    
+    // 表示用のテキストを生成
+    String getTimeText(double minutes) {
+      if (isBreakTime && minutes < 1.0) {
+        // 1分未満の場合は秒で表示
+        return '${(minutes * 60).toInt()}秒';
+      } else if (isBreakTime && minutes % 1 != 0) {
+        // 小数点以下がある場合（例：1.5分）
+        final mins = minutes.toInt();
+        final secs = ((minutes - mins) * 60).toInt();
+        return '${mins}分${secs}秒';
+      } else {
+        return '${value.toInt()}分';
+      }
+    }
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: AppConstants.cardDecoration,
@@ -172,7 +521,7 @@ class _TimerScreenState extends State<TimerScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${value.toInt()}分',
+                  getTimeText(value),
                   style: AppConstants.valueStyle,
                 ),
               ),
@@ -192,7 +541,7 @@ class _TimerScreenState extends State<TimerScreen> {
               value: value,
               min: min,
               max: max,
-              divisions: ((max - min) / 5).toInt(),
+              divisions: divisions,
               onChanged: onChanged,
             ),
           ),
@@ -200,7 +549,7 @@ class _TimerScreenState extends State<TimerScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${min.toInt()}分',
+                isBreakTime && min < 1.0 ? '${(min * 60).toInt()}秒' : '${min.toInt()}分',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.white.withOpacity(0.5),
@@ -243,7 +592,7 @@ class _TimerScreenState extends State<TimerScreen> {
                         setState(() {
                           _sets--;
                         });
-                        _saveSettings(); // 設定を保存
+                        _onManualChange();
                       }
                     : null,
                 icon: const Icon(Icons.remove_circle_outline),
@@ -285,7 +634,7 @@ class _TimerScreenState extends State<TimerScreen> {
                         setState(() {
                           _sets++;
                         });
-                        _saveSettings(); // 設定を保存
+                        _onManualChange();
                       }
                     : null,
                 icon: const Icon(Icons.add_circle_outline),
@@ -337,6 +686,19 @@ class _TimerScreenState extends State<TimerScreen> {
     final totalMinutes = (_workMinutes + _breakMinutes) * _sets;
     final hours = totalMinutes ~/ 60;
     final minutes = totalMinutes % 60;
+    
+    // 休憩時間の表示テキストを生成
+    String getBreakTimeText() {
+      if (_breakMinutes < 1.0) {
+        return '${(_breakMinutes * 60).toInt()}秒';
+      } else if (_breakMinutes % 1 != 0) {
+        final mins = _breakMinutes.toInt();
+        final secs = ((_breakMinutes - mins) * 60).toInt();
+        return '${mins}分${secs}秒';
+      } else {
+        return '${_breakMinutes.toInt()}分';
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -373,7 +735,7 @@ class _TimerScreenState extends State<TimerScreen> {
                 width: 1,
                 color: Colors.white.withOpacity(0.2),
               ),
-              _buildStatusItem('休憩', '${_breakMinutes.toInt()}分'),
+              _buildStatusItem('休憩', getBreakTimeText()),
               Container(
                 height: 30,
                 width: 1,

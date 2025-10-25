@@ -86,7 +86,13 @@ class _StatsScreenState extends State<StatsScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('データの読み込みに失敗しました: $e')),
+          SnackBar(
+            content: Text(
+              'データの読み込みに失敗しました: $e',
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

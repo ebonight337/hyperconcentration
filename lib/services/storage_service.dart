@@ -206,14 +206,43 @@ class StorageService {
 
   // ==================== 設定 ====================
 
-  /// 通知音設定を取得（0:男性, 1:女性, 2:システム音, 3:バイブのみ）
-  Future<int> getNotificationSound() async {
-    return _preferences.getInt('notification_sound') ?? 2;
+  /// 通知音設定を取得（ID形式）【拡張性を考慮】
+  Future<String> getNotificationSoundId() async {
+    // 新形式：String ID
+    final soundId = _preferences.getString('notification_sound_id');
+    if (soundId != null) {
+      return soundId;
+    }
+    
+    // 旧形式からのマイグレーション（互換性のため）
+    final oldValue = _preferences.getInt('notification_sound');
+    if (oldValue != null) {
+      // 旧形式のintをIDに変換
+      String migratedId;
+      switch (oldValue) {
+        case 0: // 男性音声（準備中だった）
+        case 1: // 女性音声（準備中だった）
+        case 2: // システム音 → 柱時計にマッピング
+          migratedId = 'clock';
+          break;
+        case 3: // バイブのみ
+          migratedId = 'vibration_only';
+          break;
+        default:
+          migratedId = 'clock';
+      }
+      // 新形式で保存
+      await setNotificationSoundId(migratedId);
+      return migratedId;
+    }
+    
+    // デフォルト
+    return 'clock';
   }
 
-  /// 通知音設定を保存
-  Future<void> setNotificationSound(int value) async {
-    await _preferences.setInt('notification_sound', value);
+  /// 通知音設定を保存（ID形式）
+  Future<void> setNotificationSoundId(String soundId) async {
+    await _preferences.setString('notification_sound_id', soundId);
   }
 
   /// 最後に設定したタイマー設定を取得

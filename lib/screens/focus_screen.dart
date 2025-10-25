@@ -146,7 +146,10 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white),
+        ),
         duration: const Duration(seconds: 3),
         backgroundColor: AppConstants.surfaceColor,
       ),
