@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'screens/timer_screen.dart';
 import 'screens/stats_screen/stats_screen.dart';
 import 'screens/settings_screen/settings_screen.dart';
@@ -8,6 +9,9 @@ import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Foreground Task通信ポートを初期化（必須！）
+  FlutterForegroundTask.initCommunicationPort();
   
   // データ保存サービスを初期化
   await StorageService.instance.init();

@@ -45,6 +45,9 @@ dependencies:
   
   # 通知機能用
   flutter_local_notifications: ^17.0.0
+  
+  # Foreground Service（バックグラウンド動作）
+  flutter_foreground_task: ^8.0.0
 
 dev_dependencies:
   flutter_test:

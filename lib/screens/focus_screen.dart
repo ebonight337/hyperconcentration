@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import '../utils/constants.dart';
 import '../utils/motivational_messages.dart';
 import '../widgets/ripple_effect.dart';
 import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/achievement_service.dart';
+import '../services/foreground_timer_service.dart';
 import '../models/focus_session.dart';
 import '../models/achievement.dart';
 
@@ -29,11 +30,6 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
   late int _remainingSeconds;
   late int _currentSet;
   late bool _isWorkTime;
-  Timer? _timer;
-  Timer? _backgroundNotificationTimer;
-  
-  // バックグラウンド対応：終了予定時刻
-  late DateTime _currentPhaseEndTime;
   
   // バックグラウンド検知用
   DateTime? _backgroundStartTime;
@@ -41,10 +37,11 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
   
   // セッション記録用
   late DateTime _sessionStartTime;
-  int _completedWorkSets = 0; // 完了した作業セット数
+  int _completedWorkSets = 0;
   final StorageService _storage = StorageService.instance;
   final NotificationService _notificationService = NotificationService.instance;
   final AchievementService _achievementService = AchievementService();
+  final ForegroundTimerService _foregroundTimerService = ForegroundTimerService.instance;
   
   // 波紋エフェクト用
   final List<RippleController> _ripples = [];
@@ -61,19 +58,134 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     _currentSet = 1;
     _isWorkTime = true;
     _currentMessage = MotivationalMessages.getRandomMessage();
-    
-    // 初期フェーズの終了予定時刻を設定
-    _currentPhaseEndTime = DateTime.now().add(Duration(minutes: widget.workMinutes));
     _remainingSeconds = widget.workMinutes * 60;
     
-    _startTimer();
+    // Foreground Taskからのデータを受け取るコールバックを登録
+    FlutterForegroundTask.addTaskDataCallback(_onReceiveTaskData);
+    
+    _initForegroundService();
+  }
+  
+  /// Foreground Taskからのデータを受信
+  void _onReceiveTaskData(dynamic data) {
+    debugPrint('✅ Foreground Taskからデータ受信: $data');
+    if (data is Map) {
+      _handleForegroundMessage(data);
+    }
+  }
+
+  /// Foreground Serviceを初期化して開始
+  Future<void> _initForegroundService() async {
+    // Foreground Taskの初期化
+    await _foregroundTimerService.init();
+    
+    // Foreground Serviceを開始
+    final started = await _foregroundTimerService.startService(
+      workSeconds: widget.workMinutes * 60,
+      breakSeconds: widget.breakMinutes * 60,
+      currentSet: _currentSet,
+      totalSets: widget.totalSets,
+      isWorkTime: _isWorkTime,
+    );
+    
+    if (!started) {
+      debugPrint('❌ Foreground Service開始失敗');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('バックグラウンド動作の開始に失敗しました'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      debugPrint('✅ Foreground Service開始成功');
+      // WithForegroundTaskを使うので、ここではlistenしない
+    }
+  }
+
+  /// Foreground Serviceをクリーンアップ
+  Future<void> _cleanupForegroundService() async {
+    await _foregroundTimerService.stopService();
+  }
+
+  /// Foreground Serviceからのメッセージを処理
+  void _handleForegroundMessage(Map message) {
+    if (!mounted) {
+      debugPrint('⚠️ mountedではないためスキップ');
+      return;
+    }
+
+    debugPrint('📨 メッセージ処理開始: $message');
+
+    setState(() {
+      // 残り時間を更新
+      if (message.containsKey('remainingSeconds')) {
+        final oldSeconds = _remainingSeconds;
+        _remainingSeconds = message['remainingSeconds'];
+        debugPrint('⏱️ 残り時間更新: $oldSeconds -> $_remainingSeconds');
+      }
+      
+      // 作業/休憩状態を更新
+      if (message.containsKey('isWorkTime')) {
+        final wasWorkTime = _isWorkTime;
+        _isWorkTime = message['isWorkTime'];
+        
+        // 状態が変わった場合、メッセージも更新
+        if (wasWorkTime != _isWorkTime) {
+          _currentMessage = _isWorkTime
+              ? MotivationalMessages.getRandomMessage()
+              : MotivationalMessages.getRandomBreakMessage();
+          debugPrint('🔄 状態変更: ${wasWorkTime ? "作業" : "休憩"} -> ${_isWorkTime ? "作業" : "休憩"}');
+        }
+      }
+      
+      // セット数を更新
+      if (message.containsKey('currentSet')) {
+        final oldSet = _currentSet;
+        _currentSet = message['currentSet'];
+        if (oldSet != _currentSet) {
+          debugPrint('🔢 セット更新: $oldSet -> $_currentSet');
+        }
+      }
+    });
+
+    // イベントを処理
+    if (message.containsKey('event')) {
+      final event = message['event'];
+      debugPrint('🎉 イベント受信: $event');
+      
+      switch (event) {
+        case 'nextSet':
+          // 次のセットへ（作業セット完了）
+          _completedWorkSets++;
+          _notificationService.showWorkCompleteNotification();
+          break;
+          
+        case 'breakStart':
+          // 休憩開始
+          _notificationService.showWorkCompleteNotification();
+          break;
+          
+        case 'allComplete':
+          // 全セット完了
+          _completedWorkSets++;
+          _notificationService.showAllSetsCompleteNotification();
+          _cleanupForegroundService();
+          _saveSessionAndShowCompletion(wasInterrupted: false);
+          break;
+      }
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _timer?.cancel();
-    _backgroundNotificationTimer?.cancel();
+    
+    // Foreground Taskのコールバックを解除
+    FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
+    
+    _cleanupForegroundService();
     _notificationService.cancelAllNotifications();
     
     for (var ripple in _ripples) {
@@ -104,11 +216,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
   /// アプリがバックグラウンドに移行した時
   void _onAppBackgrounded() {
     _backgroundStartTime = DateTime.now();
-    
-    // バックグラウンド時の定期通知を開始（1分ごと）
-    _startBackgroundNotifications();
-    
-    debugPrint('バックグラウンドに移行: ${_backgroundStartTime}');
+    debugPrint('バックグラウンドに移行: $_backgroundStartTime');
   }
 
   /// アプリがフォアグラウンドに復帰した時
@@ -127,8 +235,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
       _backgroundStartTime = null;
     }
     
-    // バックグラウンド通知を停止
-    _stopBackgroundNotifications();
+    // 通知をクリア
     _notificationService.cancelAllNotifications();
   }
 
@@ -154,117 +261,6 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
         backgroundColor: AppConstants.surfaceColor,
       ),
     );
-  }
-
-  /// バックグラウンド時の定期通知を開始
-  void _startBackgroundNotifications() {
-    _backgroundNotificationTimer?.cancel();
-    
-    // 1分ごとに通知を送信
-    _backgroundNotificationTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      final remainingMinutes = (_remainingSeconds / 60).ceil();
-      _notificationService.showBackgroundReminderNotification(remainingMinutes);
-    });
-    
-    // 最初の通知をすぐに送信
-    final remainingMinutes = (_remainingSeconds / 60).ceil();
-    _notificationService.showBackgroundReminderNotification(remainingMinutes);
-  }
-
-  /// バックグラウンド通知を停止
-  void _stopBackgroundNotifications() {
-    _backgroundNotificationTimer?.cancel();
-    _backgroundNotificationTimer = null;
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      setState(() {
-        // 終了予定時刻との差分で残り時間を計算（バックグラウンド対応）
-        final now = DateTime.now();
-        final remaining = _currentPhaseEndTime.difference(now).inSeconds;
-        
-        if (remaining > 0) {
-          _remainingSeconds = remaining;
-        } else {
-          // 時間切れ
-          _remainingSeconds = 0;
-          _handleTimerComplete();
-        }
-      });
-    });
-  }
-
-  void _handleTimerComplete() {
-    if (_isWorkTime) {
-      // 作業時間終了 - 完了セット数をカウント
-      _completedWorkSets++;
-      
-      // 通知を送信
-      _notificationService.showWorkCompleteNotification();
-      
-      if (widget.breakMinutes == 0) {
-        // 休憩時間が0分の場合は休憩をスキップ
-        if (_currentSet < widget.totalSets) {
-          // 次のセットへ
-          _setNextPhase(
-            isWork: true,
-            duration: widget.workMinutes,
-            message: MotivationalMessages.getRandomMessage(),
-          );
-          setState(() {
-            _currentSet++;
-          });
-        } else {
-          // 全セット完了
-          _timer?.cancel();
-          _notificationService.showAllSetsCompleteNotification();
-          _saveSessionAndShowCompletion(wasInterrupted: false);
-        }
-      } else {
-        // 休憩時間へ
-        _setNextPhase(
-          isWork: false,
-          duration: widget.breakMinutes,
-          message: MotivationalMessages.getRandomBreakMessage(),
-        );
-      }
-    } else {
-      // 休憩時間終了
-      _notificationService.showBreakCompleteNotification();
-      
-      if (_currentSet < widget.totalSets) {
-        // 次のセットへ
-        _setNextPhase(
-          isWork: true,
-          duration: widget.workMinutes,
-          message: MotivationalMessages.getRandomMessage(),
-        );
-        setState(() {
-          _currentSet++;
-        });
-      } else {
-        // 全セット完了
-        _timer?.cancel();
-        _notificationService.showAllSetsCompleteNotification();
-        _saveSessionAndShowCompletion(wasInterrupted: false);
-      }
-    }
-  }
-
-  /// 次のフェーズに移行（終了予定時刻を更新）
-  void _setNextPhase({
-    required bool isWork,
-    required int duration,
-    required String message,
-  }) {
-    setState(() {
-      _isWorkTime = isWork;
-      _currentMessage = message;
-      // 新しい終了予定時刻を設定
-      _currentPhaseEndTime = DateTime.now().add(Duration(minutes: duration));
-      _remainingSeconds = duration * 60;
-    });
   }
 
   /// セッションを保存して完了ダイアログを表示
@@ -413,13 +409,15 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
             child: const Text('戻る'),
           ),
           TextButton(
-            onPressed: () {
-              _timer?.cancel();
-              _stopBackgroundNotifications();
+            onPressed: () async {
+              await _cleanupForegroundService();
               _notificationService.cancelAllNotifications();
-              Navigator.of(context).pop(); // ダイアログを閉じる
-              // 途中停止として記録
-              _saveSessionAndShowCompletion(wasInterrupted: true);
+              
+              if (mounted) {
+                Navigator.of(context).pop(); // ダイアログを閉じる
+                // 途中停止として記録
+                await _saveSessionAndShowCompletion(wasInterrupted: true);
+              }
             },
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
@@ -464,166 +462,175 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GestureDetector(
-        onTapDown: (details) {
-          _addRipple(details.localPosition);
-        },
-        child: Stack(
-          children: [
-            // 背景画像
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/backgrounds/ocean_background.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      gradient: AppConstants.oceanGradient,
-                    ),
-                  );
-                },
+    // WithForegroundTaskでラップ（バージョン8.x系ではaddTaskDataCallbackでデータ受信）
+    return WithForegroundTask(
+      child: WillPopScope(
+      onWillPop: () async {
+        _showStopDialog();
+        return false;
+      },
+      child: Scaffold(
+        body: GestureDetector(
+          onTapDown: (details) {
+            _addRipple(details.localPosition);
+          },
+          child: Stack(
+            children: [
+              // 背景画像
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/backgrounds/ocean_background.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: AppConstants.oceanGradient,
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            
-            // 暗いオーバーレイ
-            Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.4),
+              
+              // 暗いオーバーレイ
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withOpacity(0.4),
+                ),
               ),
-            ),
-            
-            // 波紋エフェクト
-            RippleEffect(ripples: _ripples),
-            
-            // コンテンツ
-            Center(
-              child: SafeArea(
-                child: Column(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                  const SizedBox(height: 60),
-                  
-                  // ステータス表示
-                  Text(
-                    _isWorkTime ? '作業中' : '休憩中',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.9),
-                      letterSpacing: 2,
+              
+              // 波紋エフェクト
+              RippleEffect(ripples: _ripples),
+              
+              // コンテンツ
+              Center(
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                    const SizedBox(height: 60),
+                    
+                    // ステータス表示
+                    Text(
+                      _isWorkTime ? '作業中' : '休憩中',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withOpacity(0.9),
+                        letterSpacing: 2,
+                      ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // セット数表示
-                  Text(
-                    'セット $_currentSet / ${widget.totalSets}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white.withOpacity(0.7),
-                      letterSpacing: 1,
+                    
+                    const SizedBox(height: 20),
+                    
+                    // セット数表示
+                    Text(
+                      'セット $_currentSet / ${widget.totalSets}',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white.withOpacity(0.7),
+                        letterSpacing: 1,
+                      ),
                     ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // タイマー表示
-                  Container(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Text(
-                          _formatTime(_remainingSeconds),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 80,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 4,
-                            shadows: [
-                              Shadow(
-                                color: AppConstants.accentColor,
-                                blurRadius: 30,
-                              ),
-                            ],
+                    
+                    const Spacer(),
+                    
+                    // タイマー表示
+                    Container(
+                      padding: const EdgeInsets.all(40),
+                      child: Column(
+                        children: [
+                          Text(
+                            _formatTime(_remainingSeconds),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 80,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 4,
+                              shadows: [
+                                Shadow(
+                                  color: AppConstants.accentColor,
+                                  blurRadius: 30,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            '残り時間',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white.withOpacity(0.6),
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // 励ましメッセージ
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Text(
+                        _currentMessage,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.7),
+                          fontStyle: FontStyle.italic,
+                          height: 1.6,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 60),
+                    
+                    // 停止ボタン
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: OutlinedButton(
+                        onPressed: _showStopDialog,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white.withOpacity(0.7),
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 40,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Text(
-                          '残り時間',
-                          textAlign: TextAlign.center,
+                        child: const Text(
+                          '停止',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 14,
                             letterSpacing: 1,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // 励ましメッセージ
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      _currentMessage,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.7),
-                        fontStyle: FontStyle.italic,
-                        height: 1.6,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 60),
-                  
-                  // 停止ボタン
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: OutlinedButton(
-                      onPressed: _showStopDialog,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white.withOpacity(0.7),
-                        side: BorderSide(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: const Text(
-                        '停止',
-                        style: TextStyle(
-                          fontSize: 14,
-                          letterSpacing: 1,
-                        ),
                       ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 40),
-                ],
+                    
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
-            ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
+      ),
       ),
     );
   }
