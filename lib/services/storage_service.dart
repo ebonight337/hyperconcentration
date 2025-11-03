@@ -247,9 +247,24 @@ class StorageService {
 
   /// 最後に設定したタイマー設定を取得
   Future<Map<String, int>> getLastTimerSettings() async {
+    // 新形式：休憩時間を秒数で取得
+    final breakSeconds = _preferences.getInt('last_break_seconds');
+    
+    // 旧形式からのマイグレーション
+    if (breakSeconds == null) {
+      final oldBreakMinutes = _preferences.getInt('last_break_minutes') ?? 5;
+      // 分を秒に変換して保存
+      await _preferences.setInt('last_break_seconds', oldBreakMinutes * 60);
+      return {
+        'workMinutes': _preferences.getInt('last_work_minutes') ?? 25,
+        'breakSeconds': oldBreakMinutes * 60,
+        'sets': _preferences.getInt('last_sets') ?? 3,
+      };
+    }
+    
     return {
       'workMinutes': _preferences.getInt('last_work_minutes') ?? 25,
-      'breakMinutes': _preferences.getInt('last_break_minutes') ?? 5,
+      'breakSeconds': breakSeconds,
       'sets': _preferences.getInt('last_sets') ?? 3,
     };
   }
@@ -257,11 +272,11 @@ class StorageService {
   /// 最後に設定したタイマー設定を保存
   Future<void> saveLastTimerSettings({
     required int workMinutes,
-    required int breakMinutes,
+    required int breakSeconds, // 秒数で受け取る
     required int sets,
   }) async {
     await _preferences.setInt('last_work_minutes', workMinutes);
-    await _preferences.setInt('last_break_minutes', breakMinutes);
+    await _preferences.setInt('last_break_seconds', breakSeconds); // 秒数で保存
     await _preferences.setInt('last_sets', sets);
   }
 

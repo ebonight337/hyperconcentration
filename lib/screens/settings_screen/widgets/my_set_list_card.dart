@@ -183,7 +183,7 @@ class _MySetListCardState extends State<MySetListCard> {
     // タイマー画面の設定に反映
     await _storage.saveLastTimerSettings(
       workMinutes: mySet.workMinutes,
-      breakMinutes: mySet.breakMinutes,
+      breakSeconds: mySet.breakMinutes * 60, // 分を秒に変換
       sets: mySet.sets,
     );
     

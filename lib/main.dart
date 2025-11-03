@@ -6,6 +6,7 @@ import 'screens/settings_screen/settings_screen.dart';
 import 'utils/constants.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
+import 'services/foreground_timer_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,9 @@ void main() async {
   
   // 通知サービスを初期化
   await NotificationService.instance.init();
+  
+  // ✅ Foreground Timerサービスを初期化（追加！）
+  await ForegroundTimerService.instance.init();
   
   runApp(const HyperConcentrationApp());
 }

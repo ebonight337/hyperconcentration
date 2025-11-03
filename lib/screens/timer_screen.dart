@@ -45,8 +45,8 @@ class _TimerScreenState extends State<TimerScreen> {
       setState(() {
         _mySets = mySets;
         _workMinutes = settings['workMinutes']!.toDouble();
-        // 休憩時間が範囲外の場合は補正
-        _breakMinutes = _validateBreakMinutes(settings['breakMinutes']!.toDouble());
+        // 休憩時間を秒数から分に変換して補正
+        _breakMinutes = _validateBreakMinutes(settings['breakSeconds']! / 60.0);
         _sets = settings['sets']!;
         
         // 最後の設定と一致するマイセットがあれば選択
@@ -88,7 +88,7 @@ class _TimerScreenState extends State<TimerScreen> {
   Future<void> _saveSettings() async {
     await _storage.saveLastTimerSettings(
       workMinutes: _workMinutes.toInt(),
-      breakMinutes: _breakMinutes.toInt(),
+      breakSeconds: (_breakMinutes * 60).toInt(), // 分を秒に変換
       sets: _sets,
     );
   }
@@ -251,7 +251,7 @@ class _TimerScreenState extends State<TimerScreen> {
       MaterialPageRoute(
         builder: (context) => FocusScreen(
           workMinutes: _workMinutes.toInt(),
-          breakMinutes: _breakMinutes.toInt(),
+          breakSeconds: (_breakMinutes * 60).toInt(), // 秒数で渡す
           totalSets: _sets,
         ),
       ),

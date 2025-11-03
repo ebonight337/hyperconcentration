@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'dart:async';
 import '../utils/constants.dart';
 import '../utils/motivational_messages.dart';
 import '../widgets/ripple_effect.dart';
@@ -12,13 +13,13 @@ import '../models/achievement.dart';
 
 class FocusScreen extends StatefulWidget {
   final int workMinutes;
-  final int breakMinutes;
+  final int breakSeconds; // 休憩時間は秒数で受け取る
   final int totalSets;
 
   const FocusScreen({
     super.key,
     required this.workMinutes,
-    required this.breakMinutes,
+    required this.breakSeconds,
     required this.totalSets,
   });
 
@@ -48,6 +49,9 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
   
   // ランダムメッセージ
   late String _currentMessage;
+  
+  // 完了時のループ通知用
+  Timer? _completionNotificationTimer;
 
   @override
   void initState() {
@@ -82,7 +86,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     // Foreground Serviceを開始
     final started = await _foregroundTimerService.startService(
       workSeconds: widget.workMinutes * 60,
-      breakSeconds: widget.breakMinutes * 60,
+      breakSeconds: widget.breakSeconds, // すでに秒数
       currentSet: _currentSet,
       totalSets: widget.totalSets,
       isWorkTime: _isWorkTime,
@@ -170,7 +174,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
         case 'allComplete':
           // 全セット完了
           _completedWorkSets++;
-          _notificationService.showAllSetsCompleteNotification();
+          _startCompletionNotificationLoop();
           _cleanupForegroundService();
           _saveSessionAndShowCompletion(wasInterrupted: false);
           break;
@@ -184,6 +188,9 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     
     // Foreground Taskのコールバックを解除
     FlutterForegroundTask.removeTaskDataCallback(_onReceiveTaskData);
+    
+    // 完了通知ループをキャンセル
+    _completionNotificationTimer?.cancel();
     
     _cleanupForegroundService();
     _notificationService.cancelAllNotifications();
@@ -263,6 +270,32 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     );
   }
 
+  /// 完了通知のループを開始
+  void _startCompletionNotificationLoop() {
+    // 最初の通知をすぐに送信
+    _notificationService.showAllSetsCompleteNotification();
+    
+    // 5秒ごとに通知をループ
+    _completionNotificationTimer?.cancel();
+    _completionNotificationTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (timer) {
+        _notificationService.showAllSetsCompleteNotification();
+        debugPrint('🔔 完了通知を再送信');
+      },
+    );
+    
+    debugPrint('🔁 完了通知ループ開始 (1秒ごと)');
+  }
+  
+  /// 完了通知のループを停止
+  void _stopCompletionNotificationLoop() {
+    _completionNotificationTimer?.cancel();
+    _completionNotificationTimer = null;
+    _notificationService.cancelAllNotifications();
+    debugPrint('⛔ 完了通知ループ停止');
+  }
+
   /// セッションを保存して完了ダイアログを表示
   Future<void> _saveSessionAndShowCompletion({required bool wasInterrupted}) async {
     // 集中時間を計算（作業時間のみ）
@@ -272,7 +305,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     final session = FocusSession(
       date: _sessionStartTime,
       workMinutes: widget.workMinutes,
-      breakMinutes: widget.breakMinutes,
+      breakMinutes: (widget.breakSeconds / 60).round(), // 秒数を分に変換
       completedSets: _completedWorkSets,
       totalSets: widget.totalSets,
       totalFocusMinutes: totalFocusMinutes,
@@ -380,6 +413,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
         actions: [
           TextButton(
             onPressed: () {
+              _stopCompletionNotificationLoop();
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
