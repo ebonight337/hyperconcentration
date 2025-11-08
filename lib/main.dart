@@ -4,6 +4,7 @@ import 'screens/timer_screen.dart';
 import 'screens/stats_screen/stats_screen.dart';
 import 'screens/settings_screen/settings_screen.dart';
 import 'utils/constants.dart';
+import 'utils/app_theme.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
 import 'services/foreground_timer_service.dart';
@@ -31,29 +32,13 @@ class HyperConcentrationApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TODO: 将来的にはStorageServiceから保存されたテーマIDを取得
+    const currentThemeId = 'ocean_night';
+    
     return MaterialApp(
       title: '過集中サポート',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppConstants.backgroundColor,
-        primaryColor: AppConstants.primaryColor,
-        colorScheme: ColorScheme.dark(
-          primary: AppConstants.primaryColor,
-          secondary: AppConstants.accentColor,
-          surface: AppConstants.surfaceColor,
-          background: AppConstants.backgroundColor,
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppConstants.backgroundColor,
-          elevation: 0,
-        ),
-        tabBarTheme: const TabBarThemeData(
-          indicatorColor: AppConstants.accentColor,
-          labelColor: AppConstants.accentColor,
-          unselectedLabelColor: Color(0xFF4A5568),
-        ),
-      ),
+      theme: AppTheme.getTheme(currentThemeId),
       home: const MainScreen(),
     );
   }
@@ -83,13 +68,16 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = context.colors;
+    
     return Scaffold(
       body: Column(
         children: [
           // タブバー
           Container(
             decoration: BoxDecoration(
-              color: AppConstants.surfaceColor,
+              color: colors.surface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.3),

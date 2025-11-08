@@ -150,7 +150,7 @@ class Achievements {
     Achievement(
       id: 'streak_2',
       title: '2日連続',
-      description: '2日連続で1セット以上完了',
+      description: '2日連続で実施完了',
       icon: '🔥',
       type: AchievementType.streak,
       requiredValue: 2,
@@ -159,7 +159,7 @@ class Achievements {
     Achievement(
       id: 'streak_5',
       title: '5日連続',
-      description: '5日連続で1セット以上完了',
+      description: '5日連続で実施完了',
       icon: '⚡',
       type: AchievementType.streak,
       requiredValue: 5,
@@ -168,7 +168,7 @@ class Achievements {
     Achievement(
       id: 'perfect_week',
       title: 'パーフェクトウィーク',
-      description: '7日連続で毎日1セット以上完了',
+      description: '7日連続で毎日実施完了',
       icon: '✨',
       type: AchievementType.streak,
       requiredValue: 7,
@@ -177,7 +177,7 @@ class Achievements {
     Achievement(
       id: 'streak_30',
       title: '30日連続',
-      description: '30日連続で1セット以上完了',
+      description: '30日連続で実施完了',
       icon: '🌟',
       type: AchievementType.streak,
       requiredValue: 30,

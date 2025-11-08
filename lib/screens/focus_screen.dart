@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'dart:async';
 import '../utils/constants.dart';
+import '../utils/app_theme.dart';
 import '../utils/motivational_messages.dart';
 import '../widgets/ripple_effect.dart';
 import '../services/storage_service.dart';
@@ -95,10 +96,11 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     if (!started) {
       debugPrint('❌ Foreground Service開始失敗');
       if (mounted) {
+        final colors = context.colors;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('バックグラウンド動作の開始に失敗しました'),
-            backgroundColor: Colors.red,
+          SnackBar(
+            content: const Text('バックグラウンド動作の開始に失敗しました'),
+            backgroundColor: colors.error,
           ),
         );
       }
@@ -248,6 +250,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
 
   /// バックグラウンド時間を表示
   void _showBackgroundTimeMessage(int seconds) {
+    final colors = context.colors;
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
     
@@ -262,10 +265,10 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.textPrimary),
         ),
         duration: const Duration(seconds: 3),
-        backgroundColor: AppConstants.surfaceColor,
+        backgroundColor: colors.surface,
       ),
     );
   }
@@ -350,6 +353,9 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
     required bool wasInterrupted,
     List<Achievement> newAchievements = const [],
   }) {
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+    
     final message = wasInterrupted
         ? '途中で停止しました。\n完了したセット: $_completedWorkSets / ${widget.totalSets}'
         : '全セット完了です。\n${MotivationalMessages.getRandomCompletionMessage()}';
@@ -358,10 +364,10 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.surfaceColor,
+        backgroundColor: colors.surface,
         title: Text(
           wasInterrupted ? '停止しました' : 'お疲れさまでした',
-          style: const TextStyle(color: Colors.white),
+          style: textTheme.titleLarge?.copyWith(color: colors.textPrimary),
           textAlign: TextAlign.center,
         ),
         content: Column(
@@ -369,20 +375,19 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
           children: [
             Text(
               message,
-              style: const TextStyle(color: Colors.white70),
+              style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
               textAlign: TextAlign.center,
             ),
             // 新しい実績があれば表示
             if (newAchievements.isNotEmpty) ...[
               const SizedBox(height: 20),
-              const Divider(color: Colors.white24),
+              Divider(color: colors.divider),
               const SizedBox(height: 12),
               Text(
                 '🏆 新しい実績を解除！',
-                style: TextStyle(
-                  color: AppConstants.accentColor,
+                style: textTheme.titleMedium?.copyWith(
+                  color: colors.accent,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -399,8 +404,8 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                     const SizedBox(width: 8),
                     Text(
                       achievement.title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -425,17 +430,20 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
   }
 
   void _showStopDialog() {
+    final colors = context.colors;
+    final textTheme = Theme.of(context).textTheme;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.surfaceColor,
-        title: const Text(
+        backgroundColor: colors.surface,
+        title: Text(
           '⚠️ 本当に停止しますか？',
-          style: TextStyle(color: Colors.white),
+          style: textTheme.titleLarge?.copyWith(color: colors.textPrimary),
         ),
-        content: const Text(
+        content: Text(
           '途中停止しても、同じ日に再度達成すれば連続は継続します。',
-          style: TextStyle(color: Colors.white70),
+          style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -454,7 +462,7 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
               }
             },
             style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+              foregroundColor: colors.error,
             ),
             child: const Text('停止する'),
           ),
@@ -496,6 +504,10 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final gradients = context.gradients;
+    final textTheme = Theme.of(context).textTheme;
+    
     // WithForegroundTaskでラップ（バージョン8.x系ではaddTaskDataCallbackでデータ受信）
     return WithForegroundTask(
       child: WillPopScope(
@@ -518,8 +530,8 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                   alignment: Alignment.center,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      decoration: const BoxDecoration(
-                        gradient: AppConstants.oceanGradient,
+                      decoration: BoxDecoration(
+                        gradient: gradients.background,
                       ),
                     );
                   },
@@ -550,10 +562,8 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                     Text(
                       _isWorkTime ? '作業中' : '休憩中',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withOpacity(0.9),
+                      style: textTheme.headlineMedium?.copyWith(
+                        color: colors.textPrimary.withOpacity(0.9),
                         letterSpacing: 2,
                       ),
                     ),
@@ -564,9 +574,8 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                     Text(
                       'セット $_currentSet / ${widget.totalSets}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white.withOpacity(0.7),
+                      style: textTheme.titleMedium?.copyWith(
+                        color: colors.textSecondary,
                         letterSpacing: 1,
                       ),
                     ),
@@ -581,14 +590,14 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                           Text(
                             _formatTime(_remainingSeconds),
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 80,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: colors.textPrimary,
                               letterSpacing: 4,
                               shadows: [
                                 Shadow(
-                                  color: AppConstants.accentColor,
+                                  color: colors.accent,
                                   blurRadius: 30,
                                 ),
                               ],
@@ -598,9 +607,8 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                           Text(
                             '残り時間',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withOpacity(0.6),
+                            style: textTheme.labelLarge?.copyWith(
+                              color: colors.textTertiary,
                               letterSpacing: 1,
                             ),
                           ),
@@ -615,9 +623,8 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Text(
                         _currentMessage,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.7),
+                        style: textTheme.bodyLarge?.copyWith(
+                          color: colors.textSecondary,
                           fontStyle: FontStyle.italic,
                           height: 1.6,
                         ),
@@ -633,9 +640,9 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
                       child: OutlinedButton(
                         onPressed: _showStopDialog,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white.withOpacity(0.7),
+                          foregroundColor: colors.textSecondary,
                           side: BorderSide(
-                            color: Colors.white.withOpacity(0.3),
+                            color: colors.textSecondary.withOpacity(0.3),
                             width: 1.5,
                           ),
                           padding: const EdgeInsets.symmetric(
