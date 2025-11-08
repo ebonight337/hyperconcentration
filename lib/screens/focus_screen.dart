@@ -161,13 +161,13 @@ class _FocusScreenState extends State<FocusScreen> with TickerProviderStateMixin
       
       switch (event) {
         case 'nextSet':
-          // 次のセットへ（作業セット完了）
+          // 次のセットへ（休憩時間終了）
           _completedWorkSets++;
-          _notificationService.showWorkCompleteNotification();
+          _notificationService.showBreakCompleteNotification();
           break;
           
         case 'breakStart':
-          // 休憩開始
+          // 休憩開始（作業時間終了）
           _notificationService.showWorkCompleteNotification();
           break;
           
