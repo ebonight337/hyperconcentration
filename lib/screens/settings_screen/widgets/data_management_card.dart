@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/app_theme.dart';
 import '../../../services/storage_service.dart';
 import '../../../models/achievement.dart';
 
@@ -12,7 +12,7 @@ class DataManagementCard extends StatefulWidget {
 
 class _DataManagementCardState extends State<DataManagementCard> {
   final StorageService _storage = StorageService.instance;
-  
+
   int _totalMinutes = 0;
   int _currentStreak = 0;
   int _unlockedAchievements = 0;
@@ -31,7 +31,7 @@ class _DataManagementCardState extends State<DataManagementCard> {
 
     try {
       final stats = await _storage.getStats();
-      
+
       setState(() {
         _totalMinutes = stats.totalFocusMinutes;
         _currentStreak = stats.currentStreak;
@@ -49,14 +49,14 @@ class _DataManagementCardState extends State<DataManagementCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.surfaceColor,
-        title: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text(
           '古いデータを削除',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
-        content: const Text(
+        content: Text(
           '1年以上前のセッションデータを削除します。\nよろしいですか?',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -75,15 +75,15 @@ class _DataManagementCardState extends State<DataManagementCard> {
     if (confirmed == true) {
       try {
         await _storage.cleanOldData();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
                 '古いデータを削除しました',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
               ),
-              backgroundColor: AppConstants.surfaceColor,
+              backgroundColor: context.colors.surface,
             ),
           );
         }
@@ -104,7 +104,7 @@ class _DataManagementCardState extends State<DataManagementCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.surfaceColor,
+        backgroundColor: context.colors.surface,
         title: Row(
           children: [
             const Icon(
@@ -113,9 +113,9 @@ class _DataManagementCardState extends State<DataManagementCard> {
               size: 28,
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'データリセット',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: context.colors.textPrimary),
             ),
           ],
         ),
@@ -123,10 +123,10 @@ class _DataManagementCardState extends State<DataManagementCard> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '本当に全データをリセットしますか?',
               style: TextStyle(
-                color: Colors.white,
+                color: context.colors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -142,7 +142,7 @@ class _DataManagementCardState extends State<DataManagementCard> {
             Text(
               '削除される内容:',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: context.colors.textSecondary,
                 fontSize: 13,
               ),
             ),
@@ -153,16 +153,18 @@ class _DataManagementCardState extends State<DataManagementCard> {
               '✓ 解除済み実績',
               '✓ マイセット（デフォルトは残る）',
               '✓ 設定情報',
-            ].map((item) => Padding(
-              padding: const EdgeInsets.only(left: 8, bottom: 4),
-              child: Text(
-                item,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
-                  fontSize: 12,
+            ].map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 4),
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ),
-            )),
+            ),
           ],
         ),
         actions: [
@@ -186,15 +188,15 @@ class _DataManagementCardState extends State<DataManagementCard> {
       try {
         await _storage.resetAllData();
         await _loadStats();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text(
                 '全データをリセットしました',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
               ),
-              backgroundColor: AppConstants.surfaceColor,
+              backgroundColor: context.colors.surface,
             ),
           );
         }
@@ -225,59 +227,78 @@ class _DataManagementCardState extends State<DataManagementCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final gradients = context.gradients;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppConstants.cardDecoration,
+      decoration: BoxDecoration(
+        gradient: gradients.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.storage_outlined,
-                color: AppConstants.accentColor,
-                size: 20,
-              ),
+              Icon(Icons.storage_outlined, color: colors.accent, size: 20),
               const SizedBox(width: 8),
               Text(
                 'データ管理',
-                style: AppConstants.sectionTitleStyle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // データ概要
           if (_isLoading)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(
-                  color: AppConstants.accentColor,
-                ),
+                padding: const EdgeInsets.all(20),
+                child: CircularProgressIndicator(color: colors.accent),
               ),
             )
           else
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppConstants.primaryColor.withOpacity(0.2),
+                color: colors.primary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 children: [
-                  _buildStatRow('累計集中時間', _formatMinutes(_totalMinutes)),
+                  _buildStatRow(
+                    '累計集中時間',
+                    _formatMinutes(_totalMinutes),
+                    colors,
+                  ),
                   const SizedBox(height: 8),
-                  _buildStatRow('連続達成日数', '$_currentStreak日'),
+                  _buildStatRow('連続達成日数', '$_currentStreak日', colors),
                   const SizedBox(height: 8),
-                  _buildStatRow('解除済み実績', '$_unlockedAchievements/${Achievements.all.length}個'),
+                  _buildStatRow(
+                    '解除済み実績',
+                    '$_unlockedAchievements/${Achievements.all.length}個',
+                    colors,
+                  ),
                 ],
               ),
             ),
-          
+
           const SizedBox(height: 16),
-          
+
           // 古いデータ削除ボタン
           SizedBox(
             width: double.infinity,
@@ -287,17 +308,14 @@ class _DataManagementCardState extends State<DataManagementCard> {
               label: const Text('1年以上前のデータを削除'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.orange,
-                side: const BorderSide(
-                  color: Colors.orange,
-                  width: 1.5,
-                ),
+                side: const BorderSide(color: Colors.orange, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // 全データリセットボタン
           SizedBox(
             width: double.infinity,
@@ -307,10 +325,7 @@ class _DataManagementCardState extends State<DataManagementCard> {
               label: const Text('全データをリセット'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
-                side: const BorderSide(
-                  color: Colors.red,
-                  width: 1.5,
-                ),
+                side: const BorderSide(color: Colors.red, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
@@ -320,23 +335,20 @@ class _DataManagementCardState extends State<DataManagementCard> {
     );
   }
 
-  Widget _buildStatRow(String label, String value) {
+  Widget _buildStatRow(String label, String value, AppThemeColors colors) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.white.withOpacity(0.6),
-          ),
+          style: TextStyle(fontSize: 13, color: colors.textSecondary),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: colors.textPrimary,
           ),
         ),
       ],

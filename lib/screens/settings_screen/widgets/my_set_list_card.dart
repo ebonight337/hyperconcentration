@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/app_theme.dart';
 import '../../../models/my_set.dart';
 import '../../../services/storage_service.dart';
 import 'my_set_dialog.dart';
@@ -7,10 +7,7 @@ import 'my_set_dialog.dart';
 class MySetListCard extends StatefulWidget {
   final VoidCallback onSetApplied;
 
-  const MySetListCard({
-    super.key,
-    required this.onSetApplied,
-  });
+  const MySetListCard({super.key, required this.onSetApplied});
 
   @override
   State<MySetListCard> createState() => _MySetListCardState();
@@ -18,7 +15,7 @@ class MySetListCard extends StatefulWidget {
 
 class _MySetListCardState extends State<MySetListCard> {
   final StorageService _storage = StorageService.instance;
-  
+
   List<MySet> _mySets = [];
   bool _isLoading = true;
 
@@ -34,7 +31,7 @@ class _MySetListCardState extends State<MySetListCard> {
     });
 
     final sets = await _storage.getMySets();
-    
+
     setState(() {
       _mySets = sets;
       _isLoading = false;
@@ -61,15 +58,15 @@ class _MySetListCardState extends State<MySetListCard> {
       try {
         await _storage.addMySet(result);
         await _loadMySets();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 '「${result.name}」を追加しました',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
               ),
-              backgroundColor: AppConstants.surfaceColor,
+              backgroundColor: context.colors.surface,
             ),
           );
         }
@@ -98,15 +95,15 @@ class _MySetListCardState extends State<MySetListCard> {
         await _storage.deleteMySet(mySet.id);
         await _storage.addMySet(result);
         await _loadMySets();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 '「${result.name}」を更新しました',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
               ),
-              backgroundColor: AppConstants.surfaceColor,
+              backgroundColor: context.colors.surface,
             ),
           );
         }
@@ -127,14 +124,14 @@ class _MySetListCardState extends State<MySetListCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppConstants.surfaceColor,
-        title: const Text(
+        backgroundColor: context.colors.surface,
+        title: Text(
           '削除確認',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: context.colors.textPrimary),
         ),
         content: Text(
           '「${mySet.name}」を削除しますか?',
-          style: const TextStyle(color: Colors.white70),
+          style: TextStyle(color: context.colors.textSecondary),
         ),
         actions: [
           TextButton(
@@ -154,15 +151,15 @@ class _MySetListCardState extends State<MySetListCard> {
       try {
         await _storage.deleteMySet(mySet.id);
         await _loadMySets();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 '「${mySet.name}」を削除しました',
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: context.colors.textPrimary),
               ),
-              backgroundColor: AppConstants.surfaceColor,
+              backgroundColor: context.colors.surface,
             ),
           );
         }
@@ -186,17 +183,17 @@ class _MySetListCardState extends State<MySetListCard> {
       breakSeconds: mySet.breakMinutes * 60, // 分を秒に変換
       sets: mySet.sets,
     );
-    
+
     widget.onSetApplied();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             '「${mySet.name}」を適用しました',
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: context.colors.textPrimary),
           ),
-          backgroundColor: AppConstants.surfaceColor,
+          backgroundColor: context.colors.surface,
         ),
       );
     }
@@ -204,9 +201,22 @@ class _MySetListCardState extends State<MySetListCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final gradients = context.gradients;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppConstants.cardDecoration,
+      decoration: BoxDecoration(
+        gradient: gradients.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,37 +225,32 @@ class _MySetListCardState extends State<MySetListCard> {
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.bookmark_outlined,
-                    color: AppConstants.accentColor,
-                    size: 20,
-                  ),
+                  Icon(Icons.bookmark_outlined, color: colors.accent, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'マイセット',
-                    style: AppConstants.sectionTitleStyle,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: colors.textPrimary,
+                    ),
                   ),
                 ],
               ),
               Text(
                 '${_mySets.length}/5',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.5),
-                ),
+                style: TextStyle(fontSize: 12, color: colors.textSecondary),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           if (_isLoading)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(
-                  color: AppConstants.accentColor,
-                ),
+                padding: const EdgeInsets.all(20),
+                child: CircularProgressIndicator(color: colors.accent),
               ),
             )
           else if (_mySets.isEmpty)
@@ -254,21 +259,18 @@ class _MySetListCardState extends State<MySetListCard> {
                 padding: const EdgeInsets.all(20),
                 child: Text(
                   'マイセットがありません',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: colors.textDisabled, fontSize: 14),
                 ),
               ),
             )
           else
             ...List.generate(_mySets.length, (index) {
               final mySet = _mySets[index];
-              return _buildMySetItem(mySet);
+              return _buildMySetItem(mySet, colors);
             }),
-          
+
           const SizedBox(height: 12),
-          
+
           // 追加ボタン
           SizedBox(
             width: double.infinity,
@@ -277,11 +279,11 @@ class _MySetListCardState extends State<MySetListCard> {
               icon: const Icon(Icons.add),
               label: const Text('マイセットを追加'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppConstants.accentColor,
+                foregroundColor: colors.accent,
                 side: BorderSide(
                   color: _mySets.length < 5
-                      ? AppConstants.accentColor
-                      : Colors.white.withOpacity(0.2),
+                      ? colors.accent
+                      : colors.textDisabled,
                   width: 1.5,
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -293,24 +295,20 @@ class _MySetListCardState extends State<MySetListCard> {
     );
   }
 
-  Widget _buildMySetItem(MySet mySet) {
+  Widget _buildMySetItem(MySet mySet, AppThemeColors colors) {
     final isDefault = mySet.id == 'default';
     final totalMinutes = (mySet.workMinutes + mySet.breakMinutes) * mySet.sets;
     final hours = totalMinutes ~/ 60;
     final minutes = totalMinutes % 60;
-    final totalTimeText = hours > 0
-        ? '${hours}時間${minutes}分'
-        : '${minutes}分';
+    final totalTimeText = hours > 0 ? '${hours}時間${minutes}分' : '${minutes}分';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppConstants.primaryColor.withOpacity(0.3),
+        color: colors.primary.withOpacity(0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppConstants.primaryColor.withOpacity(0.5),
-        ),
+        border: Border.all(color: colors.primary.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,14 +322,14 @@ class _MySetListCardState extends State<MySetListCard> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: AppConstants.accentColor.withOpacity(0.2),
+                    color: colors.accent.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
+                  child: Text(
                     'デフォルト',
                     style: TextStyle(
                       fontSize: 10,
-                      color: AppConstants.accentColor,
+                      color: colors.accent,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -340,38 +338,32 @@ class _MySetListCardState extends State<MySetListCard> {
               Expanded(
                 child: Text(
                   mySet.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: colors.textPrimary,
                   ),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           Text(
             '${mySet.workMinutes}分作業・${mySet.breakMinutes}分休憩・${mySet.sets}セット',
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.white.withOpacity(0.6),
-            ),
+            style: TextStyle(fontSize: 13, color: colors.textSecondary),
           ),
-          
+
           const SizedBox(height: 4),
-          
+
           Text(
             '合計: $totalTimeText',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.5),
-            ),
+            style: TextStyle(fontSize: 12, color: colors.textTertiary),
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // アクションボタン
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -382,28 +374,28 @@ class _MySetListCardState extends State<MySetListCard> {
                 icon: const Icon(Icons.check_circle_outline, size: 18),
                 label: const Text('適用'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppConstants.accentColor,
+                  foregroundColor: colors.accent,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
                 ),
               ),
-              
+
               // 編集ボタン
               TextButton.icon(
                 onPressed: () => _editMySet(mySet),
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text('編集'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Colors.white.withOpacity(0.7),
+                  foregroundColor: colors.textSecondary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
                 ),
               ),
-              
+
               // 削除ボタン（デフォルト以外）
               if (!isDefault)
                 TextButton.icon(

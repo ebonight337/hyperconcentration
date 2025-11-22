@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/app_theme.dart';
 
 /// 連続達成日数カード
 class StreakStatsCard extends StatelessWidget {
@@ -14,9 +14,22 @@ class StreakStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final gradients = context.gradients;
+
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: AppConstants.cardDecoration,
+      decoration: BoxDecoration(
+        gradient: gradients.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -24,18 +37,22 @@ class StreakStatsCard extends StatelessWidget {
             icon: Icons.local_fire_department,
             label: '連続達成',
             value: '${currentStreak}日',
-            color: currentStreak > 0 ? Colors.orange : Colors.grey,
+            color: currentStreak > 0 ? colors.warning : colors.textDisabled,
+            textColor: colors.textPrimary,
+            subTextColor: colors.textSecondary,
           ),
           Container(
             height: 50,
             width: 1,
-            color: Colors.white.withOpacity(0.2),
+            color: colors.divider,
           ),
           _buildStreakItem(
             icon: Icons.emoji_events,
             label: '最高記録',
             value: '${maxStreak}日',
-            color: AppConstants.accentColor,
+            color: colors.accent,
+            textColor: colors.textPrimary,
+            subTextColor: colors.textSecondary,
           ),
         ],
       ),
@@ -47,6 +64,8 @@ class StreakStatsCard extends StatelessWidget {
     required String label,
     required String value,
     required Color color,
+    required Color textColor,
+    required Color subTextColor,
   }) {
     return Column(
       children: [
@@ -60,7 +79,7 @@ class StreakStatsCard extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.6),
+            color: subTextColor,
           ),
         ),
         const SizedBox(height: 4),
@@ -69,7 +88,7 @@ class StreakStatsCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.white.withOpacity(0.9),
+            color: textColor,
           ),
         ),
       ],

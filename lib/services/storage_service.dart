@@ -245,6 +245,16 @@ class StorageService {
     await _preferences.setString('notification_sound_id', soundId);
   }
 
+  /// テーマIDを取得
+  String getThemeId() {
+    return _preferences.getString('theme_id') ?? 'ocean_night';
+  }
+
+  /// テーマIDを保存
+  Future<void> saveThemeId(String themeId) async {
+    await _preferences.setString('theme_id', themeId);
+  }
+
   /// 最後に設定したタイマー設定を取得
   Future<Map<String, int>> getLastTimerSettings() async {
     // 新形式：休憩時間を秒数で取得

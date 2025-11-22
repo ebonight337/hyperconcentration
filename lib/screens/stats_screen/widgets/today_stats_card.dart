@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/app_theme.dart';
 
 /// 今日の集中時間カード
 class TodayStatsCard extends StatelessWidget {
@@ -14,21 +14,17 @@ class TodayStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+    final gradients = context.gradients;
+
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            AppConstants.primaryColor,
-            AppConstants.accentColor,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+        gradient: gradients.button,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppConstants.accentColor.withOpacity(0.3),
+            color: colors.accent.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -40,17 +36,17 @@ class TodayStatsCard extends StatelessWidget {
             '今日の集中時間',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.white.withOpacity(0.8),
+              color: colors.textPrimary.withOpacity(0.8),
               letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             formatMinutes(minutes),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 48,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: colors.textPrimary,
               letterSpacing: 2,
             ),
           ),

@@ -34,16 +34,23 @@ void main() async {
 class HyperConcentrationApp extends StatelessWidget {
   const HyperConcentrationApp({super.key});
 
+  // テーマ変更通知用のNotifier
+  static final ValueNotifier<String> themeNotifier = ValueNotifier<String>(
+    StorageService.instance.getThemeId(),
+  );
+
   @override
   Widget build(BuildContext context) {
-    // TODO: 将来的にはStorageServiceから保存されたテーマIDを取得
-    const currentThemeId = 'ocean_night';
-    
-    return MaterialApp(
-      title: '過集中サポート',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.getTheme(currentThemeId),
-      home: const MainScreen(),
+    return ValueListenableBuilder<String>(
+      valueListenable: themeNotifier,
+      builder: (context, themeId, child) {
+        return MaterialApp(
+          title: '過集中サポート',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.getTheme(themeId),
+          home: const MainScreen(),
+        );
+      },
     );
   }
 }

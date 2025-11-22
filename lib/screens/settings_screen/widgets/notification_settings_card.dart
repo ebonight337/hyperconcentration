@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../utils/app_theme.dart';
 import '../../../utils/constants.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/notification_service.dart';
@@ -7,13 +8,14 @@ class NotificationSettingsCard extends StatefulWidget {
   const NotificationSettingsCard({super.key});
 
   @override
-  State<NotificationSettingsCard> createState() => _NotificationSettingsCardState();
+  State<NotificationSettingsCard> createState() =>
+      _NotificationSettingsCardState();
 }
 
 class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
   final StorageService _storage = StorageService.instance;
   final NotificationService _notificationService = NotificationService.instance;
-  
+
   String _selectedSoundId = AppConstants.defaultNotificationSoundId;
   bool _isLoading = true;
 
@@ -36,17 +38,17 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
     setState(() {
       _selectedSoundId = soundId;
     });
-    
+
     // 変更を保存した通知を表示
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             '通知音を変更しました',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: context.colors.textPrimary),
           ),
-          duration: Duration(seconds: 2),
-          backgroundColor: AppConstants.surfaceColor,
+          duration: const Duration(seconds: 2),
+          backgroundColor: context.colors.surface,
         ),
       );
     }
@@ -55,16 +57,16 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
   Future<void> _testNotification() async {
     // 選択中の効果音でテスト通知を送信
     await _notificationService.showTestNotification(_selectedSoundId);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'テスト通知を送信しました',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: context.colors.textPrimary),
           ),
-          duration: Duration(seconds: 2),
-          backgroundColor: AppConstants.surfaceColor,
+          duration: const Duration(seconds: 2),
+          backgroundColor: context.colors.surface,
         ),
       );
     }
@@ -77,36 +79,51 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
         padding: const EdgeInsets.all(20),
         decoration: AppConstants.cardDecoration,
         child: const Center(
-          child: CircularProgressIndicator(
-            color: AppConstants.accentColor,
-          ),
+          child: CircularProgressIndicator(color: AppConstants.accentColor),
         ),
       );
     }
 
+    final colors = context.colors;
+    final gradients = context.gradients;
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppConstants.cardDecoration,
+      decoration: BoxDecoration(
+        gradient: gradients.card,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.notifications_outlined,
-                color: AppConstants.accentColor,
+                color: colors.accent,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Text(
                 '通知設定',
-                style: AppConstants.sectionTitleStyle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // 動的に効果音リストを生成（拡張性を考慮）
           ...AppConstants.notificationSounds.map((soundOption) {
             return _buildSoundOption(
@@ -115,9 +132,9 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
               subtitle: soundOption.description,
             );
           }),
-          
+
           const SizedBox(height: 16),
-          
+
           // テスト通知ボタン
           SizedBox(
             width: double.infinity,
@@ -126,11 +143,8 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
               icon: const Icon(Icons.volume_up),
               label: const Text('テスト通知を送信'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppConstants.accentColor,
-                side: const BorderSide(
-                  color: AppConstants.accentColor,
-                  width: 1.5,
-                ),
+                foregroundColor: colors.accent,
+                side: BorderSide(color: colors.accent, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
@@ -145,8 +159,9 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
     required String title,
     required String subtitle,
   }) {
+    final colors = context.colors;
     final isSelected = _selectedSoundId == soundId;
-    
+
     return InkWell(
       onTap: () => _updateSound(soundId),
       borderRadius: BorderRadius.circular(8),
@@ -158,7 +173,7 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
               value: soundId,
               groupValue: _selectedSoundId,
               onChanged: (val) => _updateSound(val!),
-              activeColor: AppConstants.accentColor,
+              activeColor: colors.accent,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -169,17 +184,16 @@ class _NotificationSettingsCardState extends State<NotificationSettingsCard> {
                     title,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                      color: colors.textPrimary.withOpacity(0.9),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withOpacity(0.5),
-                    ),
+                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 import 'widgets/notification_settings_card.dart';
+import 'widgets/theme_selection_card.dart';
 import 'widgets/my_set_list_card.dart';
 import 'widgets/data_management_card.dart';
 import 'widgets/app_info_card.dart';
@@ -36,6 +37,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           
           const SizedBox(height: 30),
+          
+          // テーマ設定
+          const ThemeSelectionCard(),
+          
+          const SizedBox(height: 20),
           
           // 通知設定
           const NotificationSettingsCard(),
