@@ -28,41 +28,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 20),
-          
+
           // タイトル
           Text(
             '設定',
-            style: AppConstants.titleStyle,
+            style: Theme.of(context).textTheme.displayMedium,
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 30),
-          
+
           // テーマ設定
           const ThemeSelectionCard(),
-          
+
           const SizedBox(height: 20),
-          
+
           // 通知設定
           const NotificationSettingsCard(),
-          
+
           const SizedBox(height: 20),
-          
+
           // マイセット管理
-          MySetListCard(
-            onSetApplied: _onSetApplied,
-          ),
-          
+          MySetListCard(onSetApplied: _onSetApplied),
+
           const SizedBox(height: 20),
-          
+
           // データ管理
           const DataManagementCard(),
-          
+
           const SizedBox(height: 20),
-          
+
           // アプリ情報
           const AppInfoCard(),
-          
+
           const SizedBox(height: 40),
         ],
       ),

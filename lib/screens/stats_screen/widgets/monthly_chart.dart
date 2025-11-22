@@ -7,16 +7,27 @@ import '../../../models/focus_session.dart';
 class MonthlyChart extends StatelessWidget {
   final List<FocusSession> sessions;
 
-  const MonthlyChart({
-    super.key,
-    required this.sessions,
-  });
+  const MonthlyChart({super.key, required this.sessions});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: AppConstants.cardDecoration,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppConstants.accentColor.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.accentColor.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -30,15 +41,14 @@ class MonthlyChart extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '過去30日間',
-                style: AppConstants.sectionTitleStyle,
+                style: AppConstants.sectionTitleStyle.copyWith(
+                  color: AppConstants.primaryColor,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: _buildChart(),
-          ),
+          SizedBox(height: 200, child: _buildChart()),
         ],
       ),
     );
@@ -51,10 +61,7 @@ class MonthlyChart extends StatelessWidget {
       return Center(
         child: Text(
           'データがありません',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.3),
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.black.withOpacity(0.3), fontSize: 14),
         ),
       );
     }
@@ -68,7 +75,7 @@ class MonthlyChart extends StatelessWidget {
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => AppConstants.surfaceColor,
+            getTooltipColor: (touchedSpot) => Colors.white,
             tooltipRoundedRadius: 8,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
@@ -76,7 +83,7 @@ class MonthlyChart extends StatelessWidget {
                 return LineTooltipItem(
                   '${data.day}日\n${_formatMinutes(data.minutes)}',
                   const TextStyle(
-                    color: Colors.white,
+                    color: AppConstants.primaryColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -101,7 +108,7 @@ class MonthlyChart extends StatelessWidget {
                       child: Text(
                         '${chartData[value.toInt()].day}',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.black.withOpacity(0.6),
                           fontSize: 10,
                         ),
                       ),
@@ -120,7 +127,7 @@ class MonthlyChart extends StatelessWidget {
                 return Text(
                   '${value.toInt()}分',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.black.withOpacity(0.6),
                     fontSize: 10,
                   ),
                 );
@@ -140,7 +147,7 @@ class MonthlyChart extends StatelessWidget {
           horizontalInterval: _getMaxY(chartData) / 4,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.05),
               strokeWidth: 1,
             );
           },
@@ -156,10 +163,7 @@ class MonthlyChart extends StatelessWidget {
             }).toList(),
             isCurved: true,
             gradient: const LinearGradient(
-              colors: [
-                AppConstants.primaryColor,
-                AppConstants.accentColor,
-              ],
+              colors: [AppConstants.primaryColor, AppConstants.accentColor],
             ),
             barWidth: 3,
             isStrokeCapRound: true,
@@ -170,7 +174,7 @@ class MonthlyChart extends StatelessWidget {
                   radius: 3,
                   color: AppConstants.accentColor,
                   strokeWidth: 2,
-                  strokeColor: AppConstants.backgroundColor,
+                  strokeColor: Colors.white,
                 );
               },
             ),
@@ -178,7 +182,7 @@ class MonthlyChart extends StatelessWidget {
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  AppConstants.accentColor.withOpacity(0.3),
+                  AppConstants.accentColor.withOpacity(0.2),
                   AppConstants.accentColor.withOpacity(0.0),
                 ],
                 begin: Alignment.topCenter,
@@ -198,16 +202,13 @@ class MonthlyChart extends StatelessWidget {
     for (int i = 29; i >= 0; i--) {
       final date = now.subtract(Duration(days: i));
       final dateKey = _formatDate(date);
-      
+
       // その日のセッションを集計
       final dayMinutes = sessions
           .where((s) => _formatDate(s.date) == dateKey)
           .fold<int>(0, (sum, s) => sum + s.totalFocusMinutes);
 
-      data.add(_ChartData(
-        day: date.day,
-        minutes: dayMinutes,
-      ));
+      data.add(_ChartData(day: date.day, minutes: dayMinutes));
     }
 
     return data;
@@ -231,7 +232,9 @@ class MonthlyChart extends StatelessWidget {
 
   double _getMaxY(List<_ChartData> data) {
     if (data.isEmpty) return 60;
-    final maxMinutes = data.map((d) => d.minutes).reduce((a, b) => a > b ? a : b);
+    final maxMinutes = data
+        .map((d) => d.minutes)
+        .reduce((a, b) => a > b ? a : b);
     if (maxMinutes == 0) return 60;
     // 最大値の1.2倍を上限にする（余白を持たせる）
     return (maxMinutes * 1.2).ceilToDouble();
@@ -242,8 +245,5 @@ class _ChartData {
   final int day;
   final int minutes;
 
-  _ChartData({
-    required this.day,
-    required this.minutes,
-  });
+  _ChartData({required this.day, required this.minutes});
 }

@@ -22,19 +22,19 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   final StorageService _storage = StorageService.instance;
   final AchievementService _achievementService = AchievementService();
-  
+
   // 統計データ
   StatsData? _statsData;
   int _todayMinutes = 0;
   int _weekMinutes = 0;
   int _monthMinutes = 0;
   List<FocusSession> _recentSessions = [];
-  
+
   // 実績データ
   List<Achievement> _unlockedAchievements = [];
   List<Achievement> _lockedAchievements = [];
   Map<String, int> _achievementProgress = {};
-  
+
   bool _isLoading = true;
 
   @override
@@ -52,22 +52,28 @@ class _StatsScreenState extends State<StatsScreen> {
     try {
       final stats = await _storage.getStats();
       final today = DateTime.now();
-      
+
       // 今日・今週・今月の集中時間を取得
       final todayMinutes = await _storage.getTotalFocusMinutesByDate(today);
       final weekStart = _getWeekStart(today);
       final weekMinutes = await _calculatePeriodMinutes(weekStart, today);
       final monthStart = DateTime(today.year, today.month, 1);
       final monthMinutes = await _calculatePeriodMinutes(monthStart, today);
-      
+
       // グラフ用の最近のセッションを取得
       final thirtyDaysAgo = today.subtract(const Duration(days: 30));
-      final recentSessions = await _storage.getSessionsBetween(thirtyDaysAgo, today);
-      
+      final recentSessions = await _storage.getSessionsBetween(
+        thirtyDaysAgo,
+        today,
+      );
+
       // 実績データを取得
-      final unlockedAchievements = await _achievementService.getUnlockedAchievements();
-      final lockedAchievements = await _achievementService.getLockedAchievements();
-      final achievementProgress = await _achievementService.getAchievementProgress();
+      final unlockedAchievements = await _achievementService
+          .getUnlockedAchievements();
+      final lockedAchievements = await _achievementService
+          .getLockedAchievements();
+      final achievementProgress = await _achievementService
+          .getAchievementProgress();
 
       setState(() {
         _statsData = stats;
@@ -130,9 +136,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: AppConstants.accentColor,
-        ),
+        child: CircularProgressIndicator(color: AppConstants.accentColor),
       );
     }
 
@@ -147,32 +151,32 @@ class _StatsScreenState extends State<StatsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            
+
             // タイトル
             Text(
               '統計',
-              style: AppConstants.titleStyle,
+              style: Theme.of(context).textTheme.displayMedium,
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 30),
-            
+
             // 今日の集中時間
             TodayStatsCard(
               minutes: _todayMinutes,
               formatMinutes: _formatMinutes,
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // 連続達成日数
             StreakStatsCard(
               currentStreak: _statsData?.currentStreak ?? 0,
               maxStreak: _statsData?.maxStreak ?? 0,
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // 週・月・累計の統計
             PeriodStatsCard(
               weekMinutes: _weekMinutes,
@@ -180,22 +184,22 @@ class _StatsScreenState extends State<StatsScreen> {
               totalMinutes: _statsData?.totalFocusMinutes ?? 0,
               formatMinutes: _formatMinutes,
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // 過去7日間のグラフ
             WeeklyChart(sessions: _recentSessions),
-            
+
             const SizedBox(height: 20),
-            
+
             // 過去30日間のグラフ
             MonthlyChart(sessions: _recentSessions),
-            
+
             const SizedBox(height: 20),
-            
+
             // 実績バッジエリア
             _buildAchievementSection(),
-            
+
             const SizedBox(height: 40),
           ],
         ),
@@ -207,13 +211,27 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget _buildAchievementSection() {
     final unlockRate = _unlockedAchievements.length / Achievements.all.length;
     final unlockPercentage = (unlockRate * 100).toInt();
-    
+
     // 解除済みと未解除を結合（解除済みを先に）
     final allAchievements = [..._unlockedAchievements, ..._lockedAchievements];
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: AppConstants.cardDecoration,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppConstants.accentColor.withOpacity(0.2),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppConstants.accentColor.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -231,7 +249,9 @@ class _StatsScreenState extends State<StatsScreen> {
                   const SizedBox(width: 8),
                   Text(
                     '実績バッジ',
-                    style: AppConstants.sectionTitleStyle,
+                    style: AppConstants.sectionTitleStyle.copyWith(
+                      color: AppConstants.primaryColor,
+                    ),
                   ),
                 ],
               ),
@@ -242,7 +262,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentColor.withOpacity(0.2),
+                  color: AppConstants.accentColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: AppConstants.accentColor.withOpacity(0.3),
@@ -259,20 +279,20 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 4),
-          
+
           // 達成数
           Text(
             '${_unlockedAchievements.length} / ${Achievements.all.length} 解除',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white.withOpacity(0.5),
+              color: Colors.black.withOpacity(0.5),
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // バッジグリッド
           if (allAchievements.isEmpty)
             Center(
@@ -281,7 +301,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: Text(
                   'セッションを完了して実績を解除しよう！',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
+                    color: Colors.black.withOpacity(0.4),
                     fontSize: 14,
                   ),
                   textAlign: TextAlign.center,
@@ -303,7 +323,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 final achievement = allAchievements[index];
                 final isUnlocked = _unlockedAchievements.contains(achievement);
                 final currentProgress = _getProgressForAchievement(achievement);
-                
+
                 return AchievementBadge(
                   achievement: achievement,
                   isUnlocked: isUnlocked,
@@ -315,7 +335,7 @@ class _StatsScreenState extends State<StatsScreen> {
       ),
     );
   }
-  
+
   /// 実績の進捗値を取得
   int _getProgressForAchievement(Achievement achievement) {
     switch (achievement.type) {
