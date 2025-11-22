@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'dart:async';
-import '../utils/constants.dart';
 import '../utils/app_theme.dart';
 import '../utils/motivational_messages.dart';
 import '../widgets/ripple_effect.dart';
