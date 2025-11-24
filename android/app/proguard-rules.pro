@@ -19,3 +19,8 @@
 -keepclasseswithmembernames class * {
     native <methods>;
 }
+
+## Google Play Core (Split Install) - Fix for R8 missing class errors
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**

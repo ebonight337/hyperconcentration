@@ -44,14 +44,14 @@ class AppInfoCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           // アプリ名
-          _buildInfoRow(label: 'アプリ名', value: '過集中サポート', colors: colors),
+          _buildInfoRow(label: 'アプリ名', value: 'DeepFlow', colors: colors),
 
           const SizedBox(height: 12),
 
-          // プロジェクト名
+          // 製作者
           _buildInfoRow(
             label: 'プロジェクト名',
-            value: 'hyperconcentration',
+            value: 'Hyperconcentration',
             colors: colors,
           ),
 
@@ -80,7 +80,7 @@ class AppInfoCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Made with Flutter',
+                    'Created by えぼし',
                     style: TextStyle(fontSize: 12, color: colors.textSecondary),
                   ),
                 ),
