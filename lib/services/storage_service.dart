@@ -8,7 +8,7 @@ import 'database_helper.dart';
 /// データ保存を統合管理するサービス
 class StorageService {
   static final StorageService instance = StorageService._init();
-  
+
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   SharedPreferences? _prefs;
 
@@ -33,7 +33,7 @@ class StorageService {
   /// セッションを保存
   Future<void> saveSession(FocusSession session) async {
     await _dbHelper.insertSession(session);
-    
+
     // 統計データを更新
     await _updateStatsAfterSession(session);
   }
@@ -64,7 +64,7 @@ class StorageService {
     if (jsonString == null) {
       return StatsData();
     }
-    
+
     try {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       return StatsData.fromJson(json);
@@ -82,10 +82,10 @@ class StorageService {
   /// セッション後に統計を更新
   Future<void> _updateStatsAfterSession(FocusSession session) async {
     final stats = await getStats();
-    
+
     // 累計時間を更新（途中停止でも集中した時間は記録）
     final newTotalMinutes = stats.totalFocusMinutes + session.totalFocusMinutes;
-    
+
     // 連続達成日数を更新
     int newCurrentStreak = stats.currentStreak;
     int newMaxStreak = stats.maxStreak;
@@ -110,7 +110,7 @@ class StorageService {
         newCurrentStreak = 1;
       } else {
         final daysDiff = today.difference(lastDate).inDays;
-        
+
         if (daysDiff == 0) {
           // 同じ日の追加セッション（連続日数は変わらない）
           // 途中停止があった後でも、同じ日に達成すれば連続継続
@@ -128,7 +128,7 @@ class StorageService {
       if (newCurrentStreak > stats.maxStreak) {
         newMaxStreak = newCurrentStreak;
       }
-      
+
       // 正常完了の場合のみlastSessionDateを更新
       newLastSessionDate = session.date;
     }
@@ -148,7 +148,7 @@ class StorageService {
   /// 実績を解除
   Future<void> unlockAchievement(String achievementId) async {
     final stats = await getStats();
-    
+
     if (!stats.unlockedAchievements.contains(achievementId)) {
       final updated = stats.copyWith(
         unlockedAchievements: [...stats.unlockedAchievements, achievementId],
@@ -166,7 +166,7 @@ class StorageService {
       // デフォルトセットを返す
       return [MySet.defaultSet];
     }
-    
+
     try {
       final jsonList = jsonDecode(jsonString) as List<dynamic>;
       return jsonList
@@ -187,12 +187,12 @@ class StorageService {
   /// マイセットを追加
   Future<void> addMySet(MySet set) async {
     final sets = await getMySets();
-    
+
     // 最大5つまで
     if (sets.length >= 5) {
       throw Exception('マイセットは最大5つまでです');
     }
-    
+
     sets.add(set);
     await saveMySets(sets);
   }
@@ -213,7 +213,7 @@ class StorageService {
     if (soundId != null) {
       return soundId;
     }
-    
+
     // 旧形式からのマイグレーション（互換性のため）
     final oldValue = _preferences.getInt('notification_sound');
     if (oldValue != null) {
@@ -235,7 +235,7 @@ class StorageService {
       await setNotificationSoundId(migratedId);
       return migratedId;
     }
-    
+
     // デフォルト
     return 'clock';
   }
@@ -255,11 +255,21 @@ class StorageService {
     await _preferences.setString('theme_id', themeId);
   }
 
+  /// 背景IDを取得
+  String getBackgroundId() {
+    return _preferences.getString('background_id') ?? 'ocean';
+  }
+
+  /// 背景IDを保存
+  Future<void> saveBackgroundId(String backgroundId) async {
+    await _preferences.setString('background_id', backgroundId);
+  }
+
   /// 最後に設定したタイマー設定を取得
   Future<Map<String, int>> getLastTimerSettings() async {
     // 新形式：休憩時間を秒数で取得
     final breakSeconds = _preferences.getInt('last_break_seconds');
-    
+
     // 旧形式からのマイグレーション
     if (breakSeconds == null) {
       final oldBreakMinutes = _preferences.getInt('last_break_minutes') ?? 5;
@@ -271,7 +281,7 @@ class StorageService {
         'sets': _preferences.getInt('last_sets') ?? 3,
       };
     }
-    
+
     return {
       'workMinutes': _preferences.getInt('last_work_minutes') ?? 25,
       'breakSeconds': breakSeconds,
@@ -296,7 +306,7 @@ class StorageService {
   Future<void> resetAllData() async {
     // SQLiteデータを削除
     await _dbHelper.deleteAllSessions();
-    
+
     // SharedPreferencesデータを削除
     await _preferences.clear();
   }

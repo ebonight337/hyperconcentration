@@ -5,6 +5,7 @@ import 'widgets/theme_selection_card.dart';
 import 'widgets/my_set_list_card.dart';
 import 'widgets/data_management_card.dart';
 import 'widgets/app_info_card.dart';
+import 'widgets/background_settings_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -40,6 +41,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // テーマ設定
           const ThemeSelectionCard(),
+
+          const SizedBox(height: 20),
+
+          // 背景設定
+          const BackgroundSettingsCard(),
 
           const SizedBox(height: 20),
 
