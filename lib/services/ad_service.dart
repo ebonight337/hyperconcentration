@@ -9,15 +9,15 @@ class AdService {
 
   // 初期化フラグ
   bool _isInitialized = false;
-  
+
   // アプリ起動広告
   AppOpenAd? _appOpenAd;
   bool _isShowingAd = false;
-  
+
   // 開発中はテスト広告IDを使用
   // リリース時にはコメントアウトして本番IDを使用
-  static const bool _isTestMode = true; // 本番リリース時はfalseに変更
-  
+  static const bool _isTestMode = false; // 本番リリース時はfalseに変更
+
   // 広告ID（テスト用と本番用）
   static String get _appOpenAdUnitId {
     if (_isTestMode) {
@@ -32,30 +32,30 @@ class AdService {
           : 'YOUR_IOS_APP_OPEN_AD_ID'; // iOS用の本番IDを後で追加
     }
   }
-  
+
   // 初期化
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     print('\n=== AdService 初期化開始 ===');
     await MobileAds.instance.initialize();
     _isInitialized = true;
     print('MobileAds SDK 初期化完了');
-    
+
     // アプリ起動時に広告をロード
     await loadAppOpenAd();
     print('=== AdService 初期化完了 ===\n');
   }
-  
+
   // アプリ起動広告のロード
   Future<void> loadAppOpenAd() async {
     if (!_isInitialized) {
       print('エラー: AdServiceが初期化されていません');
       return;
     }
-    
+
     print('\n広告ロード開始... ID: $_appOpenAdUnitId');
-    
+
     await AppOpenAd.load(
       adUnitId: _appOpenAdUnitId,
       request: const AdRequest(),
@@ -71,26 +71,26 @@ class AdService {
       ),
     );
   }
-  
+
   // アプリ起動広告の表示
   Future<void> showAppOpenAd() async {
     print('==== showAppOpenAd() 呼び出し ====');
     print('_appOpenAd: ${_appOpenAd != null ? "あり" : "なし"}');
     print('_isShowingAd: $_isShowingAd');
-    
+
     if (_appOpenAd == null) {
       print('表示する広告がありません');
       await loadAppOpenAd(); // 次回のために再ロード
       return;
     }
-    
+
     if (_isShowingAd) {
       print('広告は既に表示中です');
       return;
     }
-    
+
     print('広告を表示します...');
-    
+
     _appOpenAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
         _isShowingAd = true;
@@ -111,13 +111,13 @@ class AdService {
         loadAppOpenAd(); // 次回のために再ロード
       },
     );
-    
+
     await _appOpenAd!.show();
   }
-  
+
   // 広告が表示可能かチェック
   bool get isAdAvailable => _appOpenAd != null && !_isShowingAd;
-  
+
   // リソースの解放
   void dispose() {
     _appOpenAd?.dispose();

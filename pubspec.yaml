@@ -51,6 +51,7 @@ dependencies:
   
   # 広告表示用
   google_mobile_ads: ^5.1.0
+  audioplayers: ^6.5.1
 
 dev_dependencies:
   flutter_test:
