@@ -9,7 +9,7 @@ class AppInfoCard extends StatelessWidget {
   // プライバシーポリシーURLを開く
   Future<void> _openPrivacyPolicy() async {
     final uri = Uri.parse(
-      'https://github.com/ebonight337/hyperconcentration/blob/main/PRIVACY_POLICY.md',
+      'https://github.com/ebonight337/hyperconcentration/blob/main/docs/index.md',
     );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
