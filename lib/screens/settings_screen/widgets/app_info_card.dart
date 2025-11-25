@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../utils/app_theme.dart';
 
 class AppInfoCard extends StatelessWidget {
   const AppInfoCard({super.key});
+
+  // プライバシーポリシーURLを開く
+  Future<void> _openPrivacyPolicy() async {
+    final uri = Uri.parse(
+      'https://github.com/ebonight337/hyperconcentration/blob/main/PRIVACY_POLICY.md',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +96,37 @@ class AppInfoCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // プライバシーポリシー
+          GestureDetector(
+            onTap: _openPrivacyPolicy,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colors.accent.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.policy_outlined, color: colors.accent, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'プライバシーポリシー',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(Icons.open_in_new, color: colors.accent, size: 14),
+                ],
+              ),
             ),
           ),
 
