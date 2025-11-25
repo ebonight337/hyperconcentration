@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/achievement.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/app_theme.dart';
 import 'achievement_detail_dialog.dart';
 
 /// 実績バッジウィジェット
@@ -18,6 +18,7 @@ class AchievementBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final progress = achievement.getProgress(currentProgress);
 
     return InkWell(
@@ -34,20 +35,16 @@ class AchievementBadge extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isUnlocked
-              ? AppConstants.accentColor.withOpacity(0.1)
-              : Colors.white,
+          color: isUnlocked ? colors.accent.withOpacity(0.1) : colors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isUnlocked
-                ? AppConstants.accentColor.withOpacity(0.5)
-                : Colors.grey.withOpacity(0.2),
+            color: isUnlocked ? colors.accent.withOpacity(0.5) : colors.divider,
             width: 1.5,
           ),
           boxShadow: [
             if (isUnlocked)
               BoxShadow(
-                color: AppConstants.accentColor.withOpacity(0.1),
+                color: colors.accent.withOpacity(0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -78,9 +75,7 @@ class AchievementBadge extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: AppConstants.accentColor.withOpacity(
-                                  0.3,
-                                ),
+                                color: colors.accent.withOpacity(0.3),
                                 blurRadius: 15,
                                 spreadRadius: 1,
                               ),
@@ -93,9 +88,7 @@ class AchievementBadge extends StatelessWidget {
                         height: 48,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: isUnlocked
-                              ? AppConstants.accentColor
-                              : Colors.grey.withOpacity(0.1),
+                          color: isUnlocked ? colors.accent : colors.divider,
                         ),
                         child: Center(
                           child: Text(
@@ -104,7 +97,7 @@ class AchievementBadge extends StatelessWidget {
                               fontSize: 24,
                               color: isUnlocked
                                   ? Colors.white
-                                  : Colors.grey.withOpacity(0.5),
+                                  : colors.textTertiary,
                             ),
                           ),
                         ),
@@ -117,13 +110,13 @@ class AchievementBadge extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(3),
                             decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.2),
+                              color: colors.divider,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.lock,
                               size: 14,
-                              color: Colors.grey,
+                              color: colors.textTertiary,
                             ),
                           ),
                         ),
@@ -143,8 +136,8 @@ class AchievementBadge extends StatelessWidget {
                           ? FontWeight.bold
                           : FontWeight.w500,
                       color: isUnlocked
-                          ? AppConstants.primaryColor
-                          : Colors.black38,
+                          ? colors.textPrimary
+                          : colors.textTertiary,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -160,7 +153,9 @@ class AchievementBadge extends StatelessWidget {
                       achievement.description,
                       style: TextStyle(
                         fontSize: 8,
-                        color: isUnlocked ? Colors.black54 : Colors.black26,
+                        color: isUnlocked
+                            ? colors.textSecondary
+                            : colors.textTertiary,
                         height: 1.2,
                       ),
                       textAlign: TextAlign.center,
@@ -181,9 +176,9 @@ class AchievementBadge extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Colors.grey.withOpacity(0.1),
+                            backgroundColor: colors.divider,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              AppConstants.accentColor.withOpacity(0.6),
+                              colors.accent.withOpacity(0.6),
                             ),
                             minHeight: 3,
                           ),
@@ -191,9 +186,9 @@ class AchievementBadge extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           achievement.getProgressText(currentProgress),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 8,
-                            color: Colors.black38,
+                            color: colors.textTertiary,
                           ),
                         ),
                       ],

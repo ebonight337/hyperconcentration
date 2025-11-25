@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:convert';
 
 /// アプリの背景定義クラス
 class AppBackground {
@@ -36,47 +34,51 @@ class AppBackground {
   static Future<List<AppBackground>> getAll() async {
     if (_cache != null) return _cache!;
 
-    try {
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+    // 静的に定義された背景リスト
+    _cache = [
+      const AppBackground(
+        id: '暗い海',
+        path: 'assets/images/backgrounds/暗い海.png',
+        name: '暗い海',
+        description: '深く静かな海',
+        icon: Icons.water,
+        color: Colors.indigo,
+      ),
+      const AppBackground(
+        id: '本の虫',
+        path: 'assets/images/backgrounds/本の虫.png',
+        name: '本の虫',
+        description: '読書の時間',
+        icon: Icons.local_library,
+        color: Colors.brown,
+      ),
+      const AppBackground(
+        id: '海の見える部屋',
+        path: 'assets/images/backgrounds/海の見える部屋.png',
+        name: '海の見える部屋',
+        description: '海辺の静けさ',
+        icon: Icons.window,
+        color: Colors.blue,
+      ),
+      const AppBackground(
+        id: '田舎の風景',
+        path: 'assets/images/backgrounds/田舎の風景.png',
+        name: '田舎の風景',
+        description: '自然の中で',
+        icon: Icons.landscape,
+        color: Colors.green,
+      ),
+      const AppBackground(
+        id: '雨の町',
+        path: 'assets/images/backgrounds/雨の町.png',
+        name: '雨の町',
+        description: '雨の日の静けさ',
+        icon: Icons.umbrella,
+        color: Colors.blueGrey,
+      ),
+    ];
 
-      final imagePaths = manifestMap.keys
-          .where((String key) => key.startsWith('assets/images/backgrounds/'))
-          .where(
-            (String key) =>
-                key.endsWith('.png') ||
-                key.endsWith('.jpg') ||
-                key.endsWith('.jpeg') ||
-                key.endsWith('.webp'),
-          )
-          .toList();
-
-      if (imagePaths.isEmpty) {
-        return [defaultBackground];
-      }
-
-      _cache = imagePaths.map((path) {
-        final filename = path.split('/').last;
-        final id = filename.split('.').first; // 拡張子を除く
-
-        // ファイル名から表示名を生成 (例: ocean_background -> Ocean)
-        final name = _formatName(id);
-
-        return AppBackground(
-          id: id,
-          path: path,
-          name: name,
-          description: 'Background image', // 動的生成時は固定またはメタデータから取得が必要だが一旦簡易化
-          icon: _getIconForName(name),
-          color: _getColorForName(name),
-        );
-      }).toList();
-
-      return _cache!;
-    } catch (e) {
-      debugPrint('Error loading backgrounds: $e');
-      return [defaultBackground];
-    }
+    return _cache!;
   }
 
   /// IDから背景を取得（非同期）
@@ -84,54 +86,5 @@ class AppBackground {
   static Future<AppBackground> fromId(String id) async {
     final all = await getAll();
     return all.firstWhere((bg) => bg.id == id, orElse: () => defaultBackground);
-  }
-
-  /// 名前をフォーマット (ocean_background -> Ocean Background)
-  static String _formatName(String id) {
-    return id
-        .replaceAll('_', ' ')
-        .replaceAll('background', '') // "background" という単語は冗長なので削除
-        .trim()
-        .split(' ')
-        .map(
-          (word) => word.isNotEmpty
-              ? '${word[0].toUpperCase()}${word.substring(1)}'
-              : '',
-        )
-        .join(' ');
-  }
-
-  /// 名前からアイコンを推測
-  static IconData _getIconForName(String name) {
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('ocean') || lowerName.contains('sea'))
-      return Icons.water;
-    if (lowerName.contains('forest') || lowerName.contains('tree'))
-      return Icons.forest;
-    if (lowerName.contains('rain')) return Icons.umbrella;
-    if (lowerName.contains('cafe') || lowerName.contains('coffee'))
-      return Icons.coffee;
-    if (lowerName.contains('library') || lowerName.contains('book'))
-      return Icons.local_library;
-    if (lowerName.contains('night') || lowerName.contains('star'))
-      return Icons.nights_stay;
-    if (lowerName.contains('sunset')) return Icons.wb_twilight;
-    return Icons.image;
-  }
-
-  /// 名前から色を推測
-  static Color _getColorForName(String name) {
-    final lowerName = name.toLowerCase();
-    if (lowerName.contains('ocean') || lowerName.contains('sea'))
-      return Colors.blue;
-    if (lowerName.contains('forest') || lowerName.contains('tree'))
-      return Colors.green;
-    if (lowerName.contains('rain')) return Colors.blueGrey;
-    if (lowerName.contains('cafe') || lowerName.contains('coffee'))
-      return Colors.brown;
-    if (lowerName.contains('library')) return Colors.indigo;
-    if (lowerName.contains('night')) return Colors.deepPurple;
-    if (lowerName.contains('sunset')) return Colors.orange;
-    return Colors.grey;
   }
 }

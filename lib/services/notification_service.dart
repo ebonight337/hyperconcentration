@@ -170,6 +170,10 @@ class NotificationService {
 
       // 既存の再生を停止してから再生
       await _audioPlayer.stop();
+
+      // 音量を最大に設定（端末のシステム音量が反映される）
+      await _audioPlayer.setVolume(1.0);
+
       await _audioPlayer.play(source);
     } catch (e) {
       debugPrint('音声再生エラー: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../utils/constants.dart';
 import '../../../models/focus_session.dart';
+import '../../../utils/app_theme.dart';
 
 /// 過去30日間のグラフ
 class MonthlyChart extends StatelessWidget {
@@ -11,18 +12,17 @@ class MonthlyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppConstants.accentColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: colors.accent.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppConstants.accentColor.withOpacity(0.05),
+            color: colors.accent.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -33,35 +33,32 @@ class MonthlyChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.show_chart,
-                color: AppConstants.accentColor,
-                size: 20,
-              ),
+              Icon(Icons.show_chart, color: colors.accent, size: 20),
               const SizedBox(width: 8),
               Text(
                 '過去30日間',
                 style: AppConstants.sectionTitleStyle.copyWith(
-                  color: AppConstants.primaryColor,
+                  color: colors.textPrimary,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(height: 200, child: _buildChart()),
+          SizedBox(height: 200, child: _buildChart(context)),
         ],
       ),
     );
   }
 
-  Widget _buildChart() {
+  Widget _buildChart(BuildContext context) {
+    final colors = context.colors;
     final chartData = _prepareChartData();
 
     if (chartData.isEmpty || chartData.every((data) => data.minutes == 0)) {
       return Center(
         child: Text(
           'データがありません',
-          style: TextStyle(color: Colors.black.withOpacity(0.3), fontSize: 14),
+          style: TextStyle(color: colors.textTertiary, fontSize: 14),
         ),
       );
     }
@@ -75,15 +72,15 @@ class MonthlyChart extends StatelessWidget {
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => Colors.white,
+            getTooltipColor: (touchedSpot) => colors.surface,
             tooltipRoundedRadius: 8,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
                 final data = chartData[spot.x.toInt()];
                 return LineTooltipItem(
                   '${data.day}日\n${_formatMinutes(data.minutes)}',
-                  const TextStyle(
-                    color: AppConstants.primaryColor,
+                  TextStyle(
+                    color: colors.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -108,7 +105,7 @@ class MonthlyChart extends StatelessWidget {
                       child: Text(
                         '${chartData[value.toInt()].day}',
                         style: TextStyle(
-                          color: Colors.black.withOpacity(0.6),
+                          color: colors.textSecondary,
                           fontSize: 10,
                         ),
                       ),
@@ -126,10 +123,7 @@ class MonthlyChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return Text(
                   '${value.toInt()}分',
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.6),
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 10),
                 );
               },
             ),
@@ -146,10 +140,7 @@ class MonthlyChart extends StatelessWidget {
           drawVerticalLine: false,
           horizontalInterval: _getMaxY(chartData) / 4,
           getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: Colors.black.withOpacity(0.05),
-              strokeWidth: 1,
-            );
+            return FlLine(color: colors.divider, strokeWidth: 1);
           },
         ),
         borderData: FlBorderData(show: false),
@@ -162,9 +153,7 @@ class MonthlyChart extends StatelessWidget {
               );
             }).toList(),
             isCurved: true,
-            gradient: const LinearGradient(
-              colors: [AppConstants.primaryColor, AppConstants.accentColor],
-            ),
+            gradient: LinearGradient(colors: [colors.primary, colors.accent]),
             barWidth: 3,
             isStrokeCapRound: true,
             dotData: FlDotData(
@@ -172,9 +161,9 @@ class MonthlyChart extends StatelessWidget {
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
                   radius: 3,
-                  color: AppConstants.accentColor,
+                  color: colors.accent,
                   strokeWidth: 2,
-                  strokeColor: Colors.white,
+                  strokeColor: colors.surface,
                 );
               },
             ),
@@ -182,8 +171,8 @@ class MonthlyChart extends StatelessWidget {
               show: true,
               gradient: LinearGradient(
                 colors: [
-                  AppConstants.accentColor.withOpacity(0.2),
-                  AppConstants.accentColor.withOpacity(0.0),
+                  colors.accent.withOpacity(0.2),
+                  colors.accent.withOpacity(0.0),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/achievement.dart';
-import '../../../utils/constants.dart';
+import '../../../utils/app_theme.dart';
 
 /// 実績詳細ダイアログ
 class AchievementDetailDialog extends StatelessWidget {
@@ -34,6 +34,7 @@ class AchievementDetailDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     final progress = achievement.getProgress(currentProgress);
     final progressPercentage = (progress * 100).toInt();
 
@@ -42,18 +43,16 @@ class AchievementDetailDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppConstants.surfaceColor,
+          color: colors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isUnlocked
-                ? AppConstants.accentColor.withOpacity(0.5)
-                : Colors.white.withOpacity(0.2),
+            color: isUnlocked ? colors.accent.withOpacity(0.5) : colors.divider,
             width: 2,
           ),
           boxShadow: [
             if (isUnlocked)
               BoxShadow(
-                color: AppConstants.accentColor.withOpacity(0.3),
+                color: colors.accent.withOpacity(0.3),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -75,7 +74,7 @@ class AchievementDetailDialog extends StatelessWidget {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppConstants.accentColor.withOpacity(0.5),
+                          color: colors.accent.withOpacity(0.5),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
@@ -89,12 +88,10 @@ class AchievementDetailDialog extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isUnlocked
-                        ? AppConstants.accentColor.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.5),
+                        ? colors.accent.withOpacity(0.3)
+                        : colors.divider,
                     border: Border.all(
-                      color: isUnlocked
-                          ? AppConstants.accentColor
-                          : Colors.white.withOpacity(0.3),
+                      color: isUnlocked ? colors.accent : colors.divider,
                       width: 3,
                     ),
                   ),
@@ -103,9 +100,7 @@ class AchievementDetailDialog extends StatelessWidget {
                       achievement.icon,
                       style: TextStyle(
                         fontSize: 48,
-                        color: isUnlocked
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.4),
+                        color: isUnlocked ? Colors.white : colors.textTertiary,
                       ),
                     ),
                   ),
@@ -118,17 +113,14 @@ class AchievementDetailDialog extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.8),
+                        color: colors.divider,
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 2,
-                        ),
+                        border: Border.all(color: colors.divider, width: 2),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.lock,
                         size: 24,
-                        color: Colors.white70,
+                        color: colors.textTertiary,
                       ),
                     ),
                   ),
@@ -142,13 +134,11 @@ class AchievementDetailDialog extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 color: isUnlocked
-                    ? AppConstants.accentColor.withOpacity(0.2)
-                    : Colors.white.withOpacity(0.1),
+                    ? colors.accent.withOpacity(0.2)
+                    : colors.divider,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isUnlocked
-                      ? AppConstants.accentColor
-                      : Colors.white.withOpacity(0.3),
+                  color: isUnlocked ? colors.accent : colors.divider,
                   width: 1.5,
                 ),
               ),
@@ -157,9 +147,7 @@ class AchievementDetailDialog extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: isUnlocked
-                      ? AppConstants.accentColor
-                      : Colors.white.withOpacity(0.6),
+                  color: isUnlocked ? colors.accent : colors.textSecondary,
                 ),
               ),
             ),
@@ -172,9 +160,7 @@ class AchievementDetailDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: isUnlocked
-                    ? Colors.white
-                    : Colors.white.withOpacity(0.7),
+                color: colors.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -184,10 +170,7 @@ class AchievementDetailDialog extends StatelessWidget {
             // 実績タイプ
             Text(
               _getAchievementTypeText(),
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.5),
-              ),
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
               textAlign: TextAlign.center,
             ),
 
@@ -197,14 +180,14 @@ class AchievementDetailDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
+                color: colors.divider,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 achievement.description,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.white.withOpacity(0.8),
+                  color: colors.textPrimary,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -225,7 +208,7 @@ class AchievementDetailDialog extends StatelessWidget {
                         '進捗',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.white.withOpacity(0.6),
+                          color: colors.textSecondary,
                         ),
                       ),
                       Text(
@@ -233,7 +216,7 @@ class AchievementDetailDialog extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: AppConstants.accentColor,
+                          color: colors.accent,
                         ),
                       ),
                     ],
@@ -243,10 +226,8 @@ class AchievementDetailDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     child: LinearProgressIndicator(
                       value: progress,
-                      backgroundColor: Colors.white.withOpacity(0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppConstants.accentColor,
-                      ),
+                      backgroundColor: colors.divider,
+                      valueColor: AlwaysStoppedAnimation<Color>(colors.accent),
                       minHeight: 8,
                     ),
                   ),
@@ -256,7 +237,7 @@ class AchievementDetailDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.7),
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
@@ -267,27 +248,21 @@ class AchievementDetailDialog extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentColor.withOpacity(0.1),
+                  color: colors.accent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppConstants.accentColor.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: colors.accent.withOpacity(0.3)),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: AppConstants.accentColor,
-                      size: 20,
-                    ),
+                    Icon(Icons.check_circle, color: colors.accent, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'おめでとうございます！',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppConstants.accentColor,
+                        color: colors.accent,
                       ),
                     ),
                   ],
@@ -302,9 +277,7 @@ class AchievementDetailDialog extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isUnlocked
-                      ? AppConstants.accentColor
-                      : Colors.white.withOpacity(0.1),
+                  backgroundColor: isUnlocked ? colors.accent : colors.divider,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -313,10 +286,7 @@ class AchievementDetailDialog extends StatelessWidget {
                 ),
                 child: const Text(
                   '閉じる',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

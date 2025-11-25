@@ -5,6 +5,7 @@ import '../../models/stats_data.dart';
 import '../../models/focus_session.dart';
 import '../../models/achievement.dart';
 import '../../utils/constants.dart';
+import '../../utils/app_theme.dart';
 import 'widgets/today_stats_card.dart';
 import 'widgets/streak_stats_card.dart';
 import 'widgets/period_stats_card.dart';
@@ -19,7 +20,8 @@ class StatsScreen extends StatefulWidget {
   State<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends State<StatsScreen> {
+class _StatsScreenState extends State<StatsScreen>
+    with AutomaticKeepAliveClientMixin {
   final StorageService _storage = StorageService.instance;
   final AchievementService _achievementService = AchievementService();
 
@@ -36,11 +38,26 @@ class _StatsScreenState extends State<StatsScreen> {
   Map<String, int> _achievementProgress = {};
 
   bool _isLoading = true;
+  bool _isFirstBuild = true;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _loadStats();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 初回以降はタブが表示されるたびにリフレッシュ
+    if (!_isFirstBuild) {
+      _loadStats();
+    } else {
+      _isFirstBuild = false;
+    }
   }
 
   /// 統計データを読み込む
@@ -134,6 +151,8 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppConstants.accentColor),
@@ -209,6 +228,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
   /// 実績バッジセクション
   Widget _buildAchievementSection() {
+    final colors = context.colors;
     final unlockRate = _unlockedAchievements.length / Achievements.all.length;
     final unlockPercentage = (unlockRate * 100).toInt();
 
@@ -218,15 +238,12 @@ class _StatsScreenState extends State<StatsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppConstants.accentColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: colors.accent.withOpacity(0.2), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppConstants.accentColor.withOpacity(0.05),
+            color: colors.accent.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -241,16 +258,12 @@ class _StatsScreenState extends State<StatsScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(
-                    Icons.emoji_events,
-                    color: AppConstants.accentColor,
-                    size: 20,
-                  ),
+                  Icon(Icons.emoji_events, color: colors.accent, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     '実績バッジ',
                     style: AppConstants.sectionTitleStyle.copyWith(
-                      color: AppConstants.primaryColor,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ],
@@ -262,16 +275,14 @@ class _StatsScreenState extends State<StatsScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppConstants.accentColor.withOpacity(0.1),
+                  color: colors.accent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppConstants.accentColor.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: colors.accent.withOpacity(0.3)),
                 ),
                 child: Text(
                   '$unlockPercentage%',
-                  style: const TextStyle(
-                    color: AppConstants.accentColor,
+                  style: TextStyle(
+                    color: colors.accent,
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
@@ -285,10 +296,7 @@ class _StatsScreenState extends State<StatsScreen> {
           // 達成数
           Text(
             '${_unlockedAchievements.length} / ${Achievements.all.length} 解除',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black.withOpacity(0.5),
-            ),
+            style: TextStyle(fontSize: 12, color: colors.textSecondary),
           ),
 
           const SizedBox(height: 20),
@@ -300,10 +308,7 @@ class _StatsScreenState extends State<StatsScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Text(
                   'セッションを完了して実績を解除しよう！',
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.4),
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: colors.textTertiary, fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
               ),
