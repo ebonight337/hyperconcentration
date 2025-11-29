@@ -5,10 +5,7 @@ import '../../../models/my_set.dart';
 class MySetDialog extends StatefulWidget {
   final MySet? editingSet;
 
-  const MySetDialog({
-    super.key,
-    this.editingSet,
-  });
+  const MySetDialog({super.key, this.editingSet});
 
   @override
   State<MySetDialog> createState() => _MySetDialogState();
@@ -25,7 +22,7 @@ class _MySetDialogState extends State<MySetDialog> {
   @override
   void initState() {
     super.initState();
-    
+
     if (isEditing) {
       _nameController = TextEditingController(text: widget.editingSet!.name);
       _workMinutes = widget.editingSet!.workMinutes.toDouble();
@@ -47,7 +44,7 @@ class _MySetDialogState extends State<MySetDialog> {
 
   void _save() {
     final name = _nameController.text.trim();
-    
+
     if (name.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -59,7 +56,9 @@ class _MySetDialogState extends State<MySetDialog> {
     }
 
     final mySet = MySet(
-      id: isEditing ? widget.editingSet!.id : DateTime.now().millisecondsSinceEpoch.toString(),
+      id: isEditing
+          ? widget.editingSet!.id
+          : DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       workMinutes: _workMinutes.toInt(),
       breakMinutes: _breakMinutes.toInt(),
@@ -73,7 +72,7 @@ class _MySetDialogState extends State<MySetDialog> {
     final totalMinutes = (_workMinutes + _breakMinutes) * _sets;
     final hours = totalMinutes ~/ 60;
     final minutes = totalMinutes % 60;
-    
+
     if (hours > 0) {
       return '${hours}時間${minutes.toInt()}分';
     }
@@ -84,9 +83,7 @@ class _MySetDialogState extends State<MySetDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppConstants.surfaceColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -104,9 +101,9 @@ class _MySetDialogState extends State<MySetDialog> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // 名前入力
               TextField(
                 controller: _nameController,
@@ -118,21 +115,28 @@ class _MySetDialogState extends State<MySetDialog> {
                   hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.primaryColor.withOpacity(0.5)),
+                    borderSide: BorderSide(
+                      color: AppConstants.primaryColor.withOpacity(0.5),
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppConstants.primaryColor.withOpacity(0.5)),
+                    borderSide: BorderSide(
+                      color: AppConstants.primaryColor.withOpacity(0.5),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppConstants.accentColor, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppConstants.accentColor,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // 作業時間
               _buildTimeSlider(
                 title: '作業時間',
@@ -145,9 +149,9 @@ class _MySetDialogState extends State<MySetDialog> {
                   });
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // 休憩時間
               _buildTimeSlider(
                 title: '休憩時間',
@@ -160,14 +164,14 @@ class _MySetDialogState extends State<MySetDialog> {
                   });
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // セット数
               _buildSetSelector(),
-              
+
               const SizedBox(height: 24),
-              
+
               // 合計時間プレビュー
               Container(
                 padding: const EdgeInsets.all(16),
@@ -198,9 +202,9 @@ class _MySetDialogState extends State<MySetDialog> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // ボタン
               Row(
                 children: [
@@ -251,10 +255,7 @@ class _MySetDialogState extends State<MySetDialog> {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-              ),
+              style: const TextStyle(fontSize: 14, color: Colors.white70),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -287,7 +288,9 @@ class _MySetDialogState extends State<MySetDialog> {
             value: value,
             min: min,
             max: max,
-            divisions: ((max - min) / 5).toInt(),
+            divisions: title == '作業時間'
+                ? ((max - min) / 1).toInt()
+                : ((max - min) / 5).toInt(),
             onChanged: onChanged,
           ),
         ),
@@ -301,10 +304,7 @@ class _MySetDialogState extends State<MySetDialog> {
       children: [
         const Text(
           'セット数',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.white70,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.white70),
         ),
         const SizedBox(height: 12),
         Row(
@@ -323,9 +323,9 @@ class _MySetDialogState extends State<MySetDialog> {
               color: AppConstants.accentColor,
               iconSize: 32,
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // セット数表示
             Container(
               width: 80,
@@ -333,10 +333,7 @@ class _MySetDialogState extends State<MySetDialog> {
               decoration: BoxDecoration(
                 color: AppConstants.accentColor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppConstants.accentColor,
-                  width: 2,
-                ),
+                border: Border.all(color: AppConstants.accentColor, width: 2),
               ),
               child: Text(
                 '$_sets',
@@ -348,9 +345,9 @@ class _MySetDialogState extends State<MySetDialog> {
                 textAlign: TextAlign.center,
               ),
             ),
-            
+
             const SizedBox(width: 16),
-            
+
             // プラスボタン
             IconButton(
               onPressed: _sets < AppConstants.maxSets

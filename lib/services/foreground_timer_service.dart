@@ -6,7 +6,7 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 /// Foreground Serviceでタイマーを管理するサービス
 class ForegroundTimerService {
   static final ForegroundTimerService instance = ForegroundTimerService._init();
-  
+
   ForegroundTimerService._init();
 
   /// Foreground Serviceを初期化
@@ -14,11 +14,11 @@ class ForegroundTimerService {
     // Foreground Taskの設定
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'focus_timer_foreground',
+        channelId: 'focus_timer_foreground_v2',
         channelName: '集中タイマー（実行中）',
         channelDescription: '集中モード実行中の通知',
-        channelImportance: NotificationChannelImportance.HIGH,
-        priority: NotificationPriority.HIGH,
+        channelImportance: NotificationChannelImportance.DEFAULT,
+        priority: NotificationPriority.DEFAULT,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
         showNotification: true,
@@ -43,7 +43,7 @@ class ForegroundTimerService {
     required bool isWorkTime,
   }) async {
     debugPrint('🚀 startService呼び出し');
-    
+
     // タスクデータを保存
     final timerData = {
       'workSeconds': workSeconds,
@@ -57,7 +57,7 @@ class ForegroundTimerService {
           .millisecondsSinceEpoch,
       'lastBackgroundNotificationTime': 0,
     };
-    
+
     debugPrint('💾 データ保存: $timerData');
     await FlutterForegroundTask.saveData(
       key: 'timerData',
@@ -126,10 +126,10 @@ class FocusTimerTaskHandler extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     debugPrint('🚀 Foreground Task開始 (starter: ${starter.name})');
-    
+
     // データが保存されるまで少し待つ
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     // 最初のデータを読み込む
     await _handleTimerTick();
   }
@@ -153,7 +153,9 @@ class FocusTimerTaskHandler extends TaskHandler {
       // データを取得（リトライ付き）
       Map<String, dynamic>? data;
       for (int i = 0; i < 5; i++) {
-        final String? dataStr = await FlutterForegroundTask.getData<String>(key: 'timerData');
+        final String? dataStr = await FlutterForegroundTask.getData<String>(
+          key: 'timerData',
+        );
         if (dataStr != null && dataStr.isNotEmpty) {
           try {
             data = jsonDecode(dataStr) as Map<String, dynamic>;
@@ -166,14 +168,15 @@ class FocusTimerTaskHandler extends TaskHandler {
         debugPrint('⚠️ データがnullまたは空 - リトライ ${i + 1}/5');
         await Future.delayed(const Duration(milliseconds: 200));
       }
-      
+
       if (data == null) {
         debugPrint('❌ データが取得できませんでした（5回リトライ後）');
         return;
       }
 
       // 初回またはデータが変更された場合に更新
-      if (_phaseEndTime == null || data['phaseEndTime'] != _phaseEndTime?.millisecondsSinceEpoch) {
+      if (_phaseEndTime == null ||
+          data['phaseEndTime'] != _phaseEndTime?.millisecondsSinceEpoch) {
         _workSeconds = data['workSeconds'] ?? 0;
         _breakSeconds = data['breakSeconds'] ?? 0;
         _currentSet = data['currentSet'] ?? 1;
@@ -182,8 +185,11 @@ class FocusTimerTaskHandler extends TaskHandler {
         _phaseEndTime = DateTime.fromMillisecondsSinceEpoch(
           data['phaseEndTime'] ?? DateTime.now().millisecondsSinceEpoch,
         );
-        _lastBackgroundNotificationTime = data['lastBackgroundNotificationTime'] ?? 0;
-        debugPrint('🔄 フェーズ情報更新: セット$_currentSet/$_totalSets, ${_isWorkTime ? "作業" : "休憩"}');
+        _lastBackgroundNotificationTime =
+            data['lastBackgroundNotificationTime'] ?? 0;
+        debugPrint(
+          '🔄 フェーズ情報更新: セット$_currentSet/$_totalSets, ${_isWorkTime ? "作業" : "休憩"}',
+        );
       }
 
       // 現在時刻と終了予定時刻の差分で残り時間を計算
@@ -216,12 +222,16 @@ class FocusTimerTaskHandler extends TaskHandler {
         final currentMinute = now.millisecondsSinceEpoch ~/ 60000;
         if (_lastBackgroundNotificationTime != currentMinute) {
           _lastBackgroundNotificationTime = currentMinute;
-          
+
           // データを更新
           final updatedData = Map<String, dynamic>.from(data);
-          updatedData['lastBackgroundNotificationTime'] = _lastBackgroundNotificationTime;
-          await FlutterForegroundTask.saveData(key: 'timerData', value: jsonEncode(updatedData));
-          
+          updatedData['lastBackgroundNotificationTime'] =
+              _lastBackgroundNotificationTime;
+          await FlutterForegroundTask.saveData(
+            key: 'timerData',
+            value: jsonEncode(updatedData),
+          );
+
           debugPrint('🔔 1分経過 - バックグラウンド通知');
         }
       } else {
@@ -249,7 +259,7 @@ class FocusTimerTaskHandler extends TaskHandler {
             duration: _workSeconds,
             incrementSet: true,
           );
-          
+
           FlutterForegroundTask.sendDataToMain({
             'event': 'nextSet',
             'currentSet': _currentSet,
@@ -268,7 +278,7 @@ class FocusTimerTaskHandler extends TaskHandler {
           duration: _breakSeconds,
           incrementSet: false,
         );
-        
+
         FlutterForegroundTask.sendDataToMain({
           'type': 'update',
           'event': 'breakStart',
@@ -288,7 +298,7 @@ class FocusTimerTaskHandler extends TaskHandler {
           duration: _workSeconds,
           incrementSet: true,
         );
-        
+
         FlutterForegroundTask.sendDataToMain({
           'type': 'update',
           'event': 'nextSet',

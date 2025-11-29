@@ -15,17 +15,17 @@ class TimerScreen extends StatefulWidget {
 
 class _TimerScreenState extends State<TimerScreen> {
   final StorageService _storage = StorageService.instance;
-  
+
   // デフォルト値
   double _workMinutes = AppConstants.defaultWorkMinutes.toDouble();
   double _breakMinutes = AppConstants.defaultBreakMinutes.toDouble();
   int _sets = AppConstants.defaultSets;
-  
+
   // マイセット関連
   List<MySet> _mySets = [];
   MySet? _selectedMySet;
   bool _isCustom = false; // 手動で変更された場合true
-  
+
   bool _isLoading = true;
 
   @override
@@ -39,21 +39,21 @@ class _TimerScreenState extends State<TimerScreen> {
     try {
       // マイセット一覧を取得
       final mySets = await _storage.getMySets();
-      
+
       // 最後の設定を読み込む
       final settings = await _storage.getLastTimerSettings();
-      
+
       setState(() {
         _mySets = mySets;
         _workMinutes = settings['workMinutes']!.toDouble();
         // 休憩時間を秒数から分に変換して補正
         _breakMinutes = _validateBreakMinutes(settings['breakSeconds']! / 60.0);
         _sets = settings['sets']!;
-        
+
         // 最後の設定と一致するマイセットがあれば選択
         _selectedMySet = _findMatchingMySet();
         _isCustom = _selectedMySet == null;
-        
+
         _isLoading = false;
       });
     } catch (e) {
@@ -62,7 +62,7 @@ class _TimerScreenState extends State<TimerScreen> {
       });
     }
   }
-  
+
   /// 休憩時間の値を検証・補正
   double _validateBreakMinutes(double value) {
     if (value < AppConstants.minBreakMinutes) {
@@ -97,7 +97,7 @@ class _TimerScreenState extends State<TimerScreen> {
   /// マイセットを選択
   void _selectMySet(MySet? mySet) {
     if (mySet == null) return;
-    
+
     setState(() {
       _selectedMySet = mySet;
       _workMinutes = mySet.workMinutes.toDouble();
@@ -106,7 +106,7 @@ class _TimerScreenState extends State<TimerScreen> {
       _sets = mySet.sets;
       _isCustom = false;
     });
-    
+
     _saveSettings();
   }
 
@@ -122,7 +122,7 @@ class _TimerScreenState extends State<TimerScreen> {
   /// マイセットを編集
   Future<void> _editMySet() async {
     if (_selectedMySet == null) return;
-    
+
     final result = await showDialog<MySet>(
       context: context,
       builder: (context) => MySetDialog(editingSet: _selectedMySet),
@@ -133,10 +133,10 @@ class _TimerScreenState extends State<TimerScreen> {
         // 既存のセットを削除して新しいセットを追加
         await _storage.deleteMySet(_selectedMySet!.id);
         await _storage.addMySet(result);
-        
+
         // マイセット一覧を再読み込み
         final mySets = await _storage.getMySets();
-        
+
         setState(() {
           _mySets = mySets;
           _selectedMySet = result;
@@ -146,9 +146,9 @@ class _TimerScreenState extends State<TimerScreen> {
           _sets = result.sets;
           _isCustom = false;
         });
-        
+
         _saveSettings();
-        
+
         if (mounted) {
           final colors = context.colors;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -210,16 +210,16 @@ class _TimerScreenState extends State<TimerScreen> {
     if (result != null) {
       try {
         await _storage.addMySet(result);
-        
+
         // マイセット一覧を再読み込み
         final mySets = await _storage.getMySets();
-        
+
         setState(() {
           _mySets = mySets;
           _selectedMySet = result;
           _isCustom = false;
         });
-        
+
         if (mounted) {
           final colors = context.colors;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -252,7 +252,7 @@ class _TimerScreenState extends State<TimerScreen> {
   void _startTimer() {
     // 開始時に設定を保存
     _saveSettings();
-    
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => FocusScreen(
@@ -268,15 +268,11 @@ class _TimerScreenState extends State<TimerScreen> {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
-    
+
     if (_isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: colors.accent,
-        ),
-      );
+      return Center(child: CircularProgressIndicator(color: colors.accent));
     }
-    
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.defaultPadding),
@@ -284,21 +280,21 @@ class _TimerScreenState extends State<TimerScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            
+
             // タイトル
             Text(
               '集中モードを開始',
               style: textTheme.displayMedium,
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 30),
-            
+
             // マイセット選択
             _buildMySetSelector(),
-            
+
             const SizedBox(height: 20),
-            
+
             // 作業時間設定
             _buildTimeSection(
               title: '作業時間',
@@ -312,9 +308,9 @@ class _TimerScreenState extends State<TimerScreen> {
                 _onManualChange();
               },
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // 休憩時間設定
             _buildTimeSection(
               title: '休憩時間',
@@ -328,14 +324,14 @@ class _TimerScreenState extends State<TimerScreen> {
                 _onManualChange();
               },
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // セット数設定
             _buildSetSection(),
-            
+
             const SizedBox(height: 20),
-            
+
             // カスタム設定時の保存ボタン
             if (_isCustom && _mySets.length < 5)
               Padding(
@@ -346,20 +342,17 @@ class _TimerScreenState extends State<TimerScreen> {
                   label: const Text('現在の設定を保存'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.accent,
-                    side: BorderSide(
-                      color: colors.accent,
-                      width: 1.5,
-                    ),
+                    side: BorderSide(color: colors.accent, width: 1.5),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
               ),
-            
+
             // 開始ボタン
             _buildStartButton(),
-            
+
             const SizedBox(height: 20),
-            
+
             // ステータス表示
             _buildStatusDisplay(),
           ],
@@ -372,27 +365,20 @@ class _TimerScreenState extends State<TimerScreen> {
   Widget _buildMySetSelector() {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-        border: Border.all(
-          color: colors.primary.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: colors.primary.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.bookmark_outlined,
-                color: colors.accent,
-                size: 18,
-              ),
+              Icon(Icons.bookmark_outlined, color: colors.accent, size: 18),
               const SizedBox(width: 8),
               Text(
                 'マイセット',
@@ -402,9 +388,9 @@ class _TimerScreenState extends State<TimerScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           Row(
             children: [
               // ドロップダウン
@@ -425,10 +411,7 @@ class _TimerScreenState extends State<TimerScreen> {
                       value: _isCustom ? 'custom' : _selectedMySet?.id,
                       isExpanded: true,
                       dropdownColor: colors.surface,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 15,
-                      ),
+                      style: TextStyle(color: colors.textPrimary, fontSize: 15),
                       icon: Icon(
                         Icons.arrow_drop_down,
                         color: colors.textSecondary,
@@ -461,7 +444,9 @@ class _TimerScreenState extends State<TimerScreen> {
                             _selectedMySet = null;
                           });
                         } else {
-                          final mySet = _mySets.firstWhere((s) => s.id == value);
+                          final mySet = _mySets.firstWhere(
+                            (s) => s.id == value,
+                          );
                           _selectMySet(mySet);
                         }
                       },
@@ -469,7 +454,7 @@ class _TimerScreenState extends State<TimerScreen> {
                   ),
                 ),
               ),
-              
+
               // 編集ボタン（マイセット選択時のみ）
               if (!_isCustom && _selectedMySet != null) ...[
                 const SizedBox(width: 8),
@@ -497,15 +482,16 @@ class _TimerScreenState extends State<TimerScreen> {
   }) {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
-    
+
     // 休憩時間かどうかを判定
     final isBreakTime = title == '休憩時間';
-    
-    // 分割数を計算（休憩時間は30秒刻み、それ以外は5分刻み）
-    final divisions = isBreakTime 
-        ? ((max - min) / 0.5).toInt() // 30秒刻み
-        : ((max - min) / 5).toInt();    // 5分刻み
-    
+
+    // 分割数を計算（休憩時間は30秒刻み、それ以外は1分刻み）
+    final divisions = isBreakTime
+        ? ((max - min) / 0.5)
+              .toInt() // 30秒刻み
+        : ((max - min) / 1).toInt(); // 1分刻み
+
     // 表示用のテキストを生成
     String getTimeText(double minutes) {
       if (isBreakTime && minutes < 1.0) {
@@ -520,16 +506,13 @@ class _TimerScreenState extends State<TimerScreen> {
         return '${value.toInt()}分';
       }
     }
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-        border: Border.all(
-          color: colors.primary.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: colors.primary.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,12 +520,12 @@ class _TimerScreenState extends State<TimerScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: textTheme.headlineSmall,
-              ),
+              Text(title, style: textTheme.headlineSmall),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: colors.accent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -569,7 +552,9 @@ class _TimerScreenState extends State<TimerScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                isBreakTime && min < 1.0 ? '${(min * 60).toInt()}秒' : '${min.toInt()}分',
+                isBreakTime && min < 1.0
+                    ? '${(min * 60).toInt()}秒'
+                    : '${min.toInt()}分',
                 style: textTheme.labelSmall?.copyWith(
                   color: colors.textTertiary,
                 ),
@@ -591,24 +576,18 @@ class _TimerScreenState extends State<TimerScreen> {
   Widget _buildSetSection() {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-        border: Border.all(
-          color: colors.primary.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: colors.primary.withOpacity(0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'セット数',
-            style: textTheme.headlineSmall,
-          ),
+          Text('セット数', style: textTheme.headlineSmall),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -627,20 +606,20 @@ class _TimerScreenState extends State<TimerScreen> {
                 color: colors.accent,
                 iconSize: 36,
               ),
-              
+
               const SizedBox(width: 20),
-              
+
               // セット数表示
               Container(
                 width: 100,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: colors.accent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: colors.accent,
-                    width: 2,
-                  ),
+                  border: Border.all(color: colors.accent, width: 2),
                 ),
                 child: Text(
                   '$_sets',
@@ -652,9 +631,9 @@ class _TimerScreenState extends State<TimerScreen> {
                   textAlign: TextAlign.center,
                 ),
               ),
-              
+
               const SizedBox(width: 20),
-              
+
               // プラスボタン
               IconButton(
                 onPressed: _sets < AppConstants.maxSets
@@ -689,7 +668,7 @@ class _TimerScreenState extends State<TimerScreen> {
   Widget _buildStartButton() {
     final colors = context.colors;
     final gradients = context.gradients;
-    
+
     return Container(
       height: AppConstants.buttonHeight,
       decoration: BoxDecoration(
@@ -728,11 +707,11 @@ class _TimerScreenState extends State<TimerScreen> {
   Widget _buildStatusDisplay() {
     final colors = context.colors;
     final textTheme = Theme.of(context).textTheme;
-    
+
     final totalMinutes = (_workMinutes + _breakMinutes) * _sets;
     final hours = totalMinutes ~/ 60;
     final minutes = totalMinutes % 60;
-    
+
     // 休憩時間の表示テキストを生成
     String getBreakTimeText() {
       if (_breakMinutes < 1.0) {
@@ -751,22 +730,19 @@ class _TimerScreenState extends State<TimerScreen> {
       decoration: BoxDecoration(
         color: colors.surface.withOpacity(0.5),
         borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-        border: Border.all(
-          color: colors.primary.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: colors.primary.withOpacity(0.2), width: 1),
       ),
       child: Column(
         children: [
           Text(
             '合計時間',
-            style: textTheme.labelMedium?.copyWith(
-              color: colors.textTertiary,
-            ),
+            style: textTheme.labelMedium?.copyWith(color: colors.textTertiary),
           ),
           const SizedBox(height: 8),
           Text(
-            hours > 0 ? '${hours}時間 ${minutes.toInt()}分' : '${minutes.toInt()}分',
+            hours > 0
+                ? '${hours}時間 ${minutes.toInt()}分'
+                : '${minutes.toInt()}分',
             style: textTheme.titleLarge?.copyWith(
               color: colors.textPrimary,
               fontWeight: FontWeight.bold,
@@ -776,18 +752,15 @@ class _TimerScreenState extends State<TimerScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatusItem('作業', '${_workMinutes.toInt()}分', colors, textTheme),
-              Container(
-                height: 30,
-                width: 1,
-                color: colors.divider,
+              _buildStatusItem(
+                '作業',
+                '${_workMinutes.toInt()}分',
+                colors,
+                textTheme,
               ),
+              Container(height: 30, width: 1, color: colors.divider),
               _buildStatusItem('休憩', getBreakTimeText(), colors, textTheme),
-              Container(
-                height: 30,
-                width: 1,
-                color: colors.divider,
-              ),
+              Container(height: 30, width: 1, color: colors.divider),
               _buildStatusItem('セット', '$_setsセット', colors, textTheme),
             ],
           ),
@@ -797,25 +770,21 @@ class _TimerScreenState extends State<TimerScreen> {
   }
 
   Widget _buildStatusItem(
-    String label, 
-    String value, 
-    AppThemeColors colors, 
+    String label,
+    String value,
+    AppThemeColors colors,
     TextTheme textTheme,
   ) {
     return Column(
       children: [
         Text(
           label,
-          style: textTheme.labelSmall?.copyWith(
-            color: colors.textTertiary,
-          ),
+          style: textTheme.labelSmall?.copyWith(color: colors.textTertiary),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: textTheme.labelLarge?.copyWith(
-            color: colors.textSecondary,
-          ),
+          style: textTheme.labelLarge?.copyWith(color: colors.textSecondary),
         ),
       ],
     );

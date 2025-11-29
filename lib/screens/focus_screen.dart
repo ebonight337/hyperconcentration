@@ -380,7 +380,7 @@ class _FocusScreenState extends State<FocusScreen>
 
     final message = wasInterrupted
         ? '途中で停止しました。\n完了したセット: $_completedWorkSets / ${widget.totalSets}'
-        : '全セット完了です。\n${MotivationalMessages.getRandomCompletionMessage()}';
+        : MotivationalMessages.getRandomCompletionMessage();
 
     showDialog(
       context: context,
@@ -468,7 +468,7 @@ class _FocusScreenState extends State<FocusScreen>
           style: textTheme.titleLarge?.copyWith(color: colors.textPrimary),
         ),
         content: Text(
-          '途中停止しても、同じ日に再度達成すれば連続は継続します。',
+          '途中停止した場合、連続記録は継続しません。',
           style: textTheme.bodyMedium?.copyWith(color: colors.textSecondary),
         ),
         actions: [
